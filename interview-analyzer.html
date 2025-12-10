@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Analysis Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-export {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-export:hover:not(:disabled) {
+            background: #059669;
+        }
+
+        .btn-export:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .results-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .transcript-count {
+            background: #667eea;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .results-section {
+            margin-bottom: 30px;
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .results-section h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #667eea;
+        }
+
+        .pain-point {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .pain-point-text {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .quote {
+            font-style: italic;
+            color: #666;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .features-list {
+            margin-top: 8px;
+            padding-left: 20px;
+        }
+
+        .features-list li {
+            color: #555;
+            margin: 4px 0;
+        }
+
+        .feature-priority {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .feature-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .priority-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .priority-count {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .priority-bar {
+            width: 100px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .priority-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .helper-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn-primary {
+                min-width: 100%;
+            }
+        }
+
+        /* iPad specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            textarea {
+                font-size: 16px; /* Prevents zoom on focus */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Interview Analysis Tool</h1>
+            <div class="subtitle">Extract pain points and map them to features using AI</div>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <div class="section-title">Interview Transcript</div>
+                <textarea id="transcript" rows="8" placeholder="Paste your customer interview transcript here..."></textarea>
+                <div class="helper-text">Tip: Include the full conversation with customer responses</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Feature List</div>
+                <textarea id="features" rows="6" placeholder="List your predefined features (one per line)..."></textarea>
+                <div class="helper-text">Example: Email notifications, Dashboard analytics, Mobile app</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" id="analyzeBtn" onclick="analyzeTranscript()">
+                    🔍 Analyze Transcript
+                </button>
+                <button class="btn-secondary" onclick="clearAll()">
+                    🗑️ Clear All
+                </button>
+                <button class="btn-export" id="exportBtn" onclick="exportResults()" disabled>
+                    📥 Export Results
+                </button>
+            </div>
+
+            <div id="results" class="results">
+                <div class="results-header">
+                    <div class="results-title">Analysis Results</div>
+                    <div class="transcript-count" id="transcriptCount">0 transcripts analyzed</div>
+                </div>
+
+                <div class="results-section">
+                    <h3>📌 Pain Points & Feature Mappings</h3>
+                    <div id="painPoints"></div>
+                </div>
+
+                <div class="results-section">
+                    <h3>🎯 Feature Priority Ranking</h3>
+                    <div id="featurePriority"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store cumulative analysis data
+        let analysisData = {
+            transcripts: [],
+            painPoints: [],
+            featureMappings: {},
+            featureCounts: {}
+        };
+
+        async function analyzeTranscript() {
+            const transcript = document.getElementById('transcript').value.trim();
+            const features = document.getElementById('features').value.trim();
+
+            if (!transcript) {
+                alert('Please enter an interview transcript');
+                return;
+            }
+
+            if (!features) {
+                alert('Please enter your feature list');
+                return;
+            }
+
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<div class="spinner"></div>Analyzing...';
+
+            try {
+                // Call Claude API to analyze
+                const analysis = await callClaudeAPI(transcript, features);
+
+                // Store transcript
+                analysisData.transcripts.push({
+                    timestamp: new Date().toISOString(),
+                    transcript: transcript
+                });
+
+                // Process and merge analysis results
+                processAnalysis(analysis);
+
+                // Display results
+                displayResults();
+
+                // Enable export
+                document.getElementById('exportBtn').disabled = false;
+
+                // Clear transcript field for next entry
+                document.getElementById('transcript').value = '';
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showError('Failed to analyze transcript. Please check your API key and try again.');
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '🔍 Analyze Transcript';
+            }
+        }
+
+        async function callClaudeAPI(transcript, features) {
+            const prompt = `You are analyzing a customer interview transcript to extract pain points and map them to potential product features.
+
+INTERVIEW TRANSCRIPT:
+${transcript}
+
+FEATURE LIST:
+${features}
+
+Please analyze this transcript and provide:
+
+1. Extract all pain points mentioned by the customer (problems, frustrations, difficulties, needs)
+2. For each pain point, provide a direct quote from the transcript that demonstrates it
+3. Map each pain point to one or more relevant features from the feature list
+4. Rank the features by how many pain points they address
+
+Return your analysis in the following JSON format:
+{
+  "painPoints": [
+    {
+      "painPoint": "Description of the pain point",
+      "quote": "Exact quote from transcript",
+      "mappedFeatures": ["Feature 1", "Feature 2"]
+    }
+  ]
+}
+
+Be thorough and extract all pain points, even subtle ones. Make sure quotes are exact excerpts from the transcript.`;
+
+            // Use Claude API via Anthropic SDK
+            // Note: In a real implementation, you'd need to handle API keys securely
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': getAPIKey(),
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-5-sonnet-20241022',
+                    max_tokens: 4096,
+                    messages: [{
+                        role: 'user',
+                        content: prompt
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const content = data.content[0].text;
+
+            // Extract JSON from response
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+
+            throw new Error('Failed to parse API response');
+        }
+
+        function getAPIKey() {
+            // Try to get API key from various sources
+            let apiKey = localStorage.getItem('claude_api_key');
+
+            if (!apiKey) {
+                apiKey = prompt('Please enter your Claude API key (it will be saved locally):');
+                if (apiKey) {
+                    localStorage.setItem('claude_api_key', apiKey);
+                }
+            }
+
+            return apiKey;
+        }
+
+        function processAnalysis(analysis) {
+            // Add new pain points
+            if (analysis.painPoints) {
+                analysis.painPoints.forEach(pp => {
+                    analysisData.painPoints.push({
+                        ...pp,
+                        transcriptIndex: analysisData.transcripts.length - 1
+                    });
+
+                    // Update feature counts
+                    pp.mappedFeatures.forEach(feature => {
+                        if (!analysisData.featureCounts[feature]) {
+                            analysisData.featureCounts[feature] = 0;
+                        }
+                        analysisData.featureCounts[feature]++;
+                    });
+                });
+            }
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.classList.add('show');
+
+            // Update transcript count
+            document.getElementById('transcriptCount').textContent =
+                `${analysisData.transcripts.length} transcript${analysisData.transcripts.length > 1 ? 's' : ''} analyzed`;
+
+            // Display pain points
+            const painPointsDiv = document.getElementById('painPoints');
+            painPointsDiv.innerHTML = '';
+
+            analysisData.painPoints.forEach((pp, index) => {
+                const ppDiv = document.createElement('div');
+                ppDiv.className = 'pain-point';
+
+                const featuresHTML = pp.mappedFeatures.length > 0
+                    ? `<ul class="features-list">
+                        ${pp.mappedFeatures.map(f => `<li>${f}</li>`).join('')}
+                       </ul>`
+                    : '<p style="color: #999;">No features mapped</p>';
+
+                ppDiv.innerHTML = `
+                    <div class="pain-point-text">${index + 1}. ${pp.painPoint}</div>
+                    <div class="quote">"${pp.quote}"</div>
+                    <div style="margin-top: 8px; font-size: 14px; font-weight: 600; color: #667eea;">
+                        Mapped Features:
+                    </div>
+                    ${featuresHTML}
+                `;
+                painPointsDiv.appendChild(ppDiv);
+            });
+
+            // Display feature priority ranking
+            displayFeaturePriority();
+        }
+
+        function displayFeaturePriority() {
+            const priorityDiv = document.getElementById('featurePriority');
+            priorityDiv.innerHTML = '';
+
+            // Sort features by count
+            const sortedFeatures = Object.entries(analysisData.featureCounts)
+                .sort((a, b) => b[1] - a[1]);
+
+            if (sortedFeatures.length === 0) {
+                priorityDiv.innerHTML = '<p style="color: #999;">No features mapped yet</p>';
+                return;
+            }
+
+            const maxCount = sortedFeatures[0][1];
+
+            sortedFeatures.forEach(([feature, count]) => {
+                const percentage = (count / maxCount) * 100;
+
+                const featureDiv = document.createElement('div');
+                featureDiv.className = 'feature-priority';
+                featureDiv.innerHTML = `
+                    <div class="feature-name">${feature}</div>
+                    <div class="priority-badge">
+                        <div class="priority-count">${count} pain point${count > 1 ? 's' : ''}</div>
+                        <div class="priority-bar">
+                            <div class="priority-fill" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+                priorityDiv.appendChild(featureDiv);
+            });
+        }
+
+        function clearAll() {
+            if (confirm('This will clear all transcripts and analysis data. Continue?')) {
+                analysisData = {
+                    transcripts: [],
+                    painPoints: [],
+                    featureMappings: {},
+                    featureCounts: {}
+                };
+
+                document.getElementById('transcript').value = '';
+                document.getElementById('features').value = '';
+                document.getElementById('results').classList.remove('show');
+                document.getElementById('exportBtn').disabled = true;
+            }
+        }
+
+        function exportResults() {
+            const format = confirm('Click OK for CSV format, Cancel for Text format');
+
+            if (format) {
+                exportCSV();
+            } else {
+                exportText();
+            }
+        }
+
+        function exportCSV() {
+            let csv = 'Pain Point,Quote,Mapped Features,Frequency\n';
+
+            analysisData.painPoints.forEach(pp => {
+                const features = pp.mappedFeatures.join('; ');
+                const featureFreqs = pp.mappedFeatures
+                    .map(f => `${f} (${analysisData.featureCounts[f]})`)
+                    .join('; ');
+
+                csv += `"${pp.painPoint}","${pp.quote}","${features}","${featureFreqs}"\n`;
+            });
+
+            csv += '\n\nFeature Priority Ranking\n';
+            csv += 'Feature,Pain Points Addressed\n';
+
+            const sortedFeatures = Object.entries(analysisData.featureCounts)
+                .sort((a, b) => b[1] - a[1]);
+
+            sortedFeatures.forEach(([feature, count]) => {
+                csv += `"${feature}",${count}\n`;
+            });
+
+            downloadFile(csv, 'interview-analysis.csv', 'text/csv');
+        }
+
+        function exportText() {
+            let text = `INTERVIEW ANALYSIS REPORT\n`;
+            text += `Generated: ${new Date().toLocaleString()}\n`;
+            text += `Transcripts Analyzed: ${analysisData.transcripts.length}\n`;
+            text += `${'='.repeat(60)}\n\n`;
+
+            text += `PAIN POINTS & FEATURE MAPPINGS\n`;
+            text += `${'='.repeat(60)}\n\n`;
+
+            analysisData.painPoints.forEach((pp, index) => {
+                text += `${index + 1}. ${pp.painPoint}\n`;
+                text += `   Quote: "${pp.quote}"\n`;
+                text += `   Mapped Features: ${pp.mappedFeatures.join(', ')}\n\n`;
+            });
+
+            text += `\n${'='.repeat(60)}\n`;
+            text += `FEATURE PRIORITY RANKING\n`;
+            text += `${'='.repeat(60)}\n\n`;
+
+            const sortedFeatures = Object.entries(analysisData.featureCounts)
+                .sort((a, b) => b[1] - a[1]);
+
+            sortedFeatures.forEach(([feature, count], index) => {
+                text += `${index + 1}. ${feature} - ${count} pain point${count > 1 ? 's' : ''}\n`;
+            });
+
+            downloadFile(text, 'interview-analysis.txt', 'text/plain');
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            document.querySelector('.content').appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        // Save API key management
+        window.addEventListener('load', () => {
+            const savedKey = localStorage.getItem('claude_api_key');
+            if (!savedKey) {
+                console.log('No API key found. You will be prompted when analyzing.');
+            }
+        });
+    </script>
+</body>
+</html>
