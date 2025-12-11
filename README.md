@@ -178,19 +178,34 @@ Product-Thing/
 
 ## 🚢 Deployment
 
-### Backend Deployment Options
+### Quick Deploy to Render (Recommended for iPad Users)
 
-- **Heroku**: Easy deployment with `git push heroku main`
-- **Railway**: Modern platform with automatic deployments
-- **Render**: Free tier available
+**Perfect for iPad users!** Deploy in 5 minutes with free tier.
+
+1. **Sign up at [Render](https://render.com)** (free)
+2. **Create New Web Service** → Connect this GitHub repository
+3. **Configure**:
+   - Build Command: `cd backend && npm install`
+   - Start Command: `cd backend && npm start`
+   - Add Environment Variable: `ANTHROPIC_API_KEY=your-key-here`
+4. **Deploy** - Get your backend URL: `https://your-app.onrender.com`
+5. **Update frontend** to use your backend URL
+
+📖 **Detailed Guide**: See [DEPLOY-RENDER.md](DEPLOY-RENDER.md) for step-by-step instructions with screenshots.
+
+### Other Backend Deployment Options
+
+- **Heroku**: Easy deployment with `git push heroku main` ($7/month minimum)
+- **Railway**: Modern platform with automatic deployments ($5/month credit)
+- **Fly.io**: Global edge network with free tier
 - **AWS/GCP/Azure**: For enterprise deployments
 
 ### Frontend Deployment Options
 
-- **Netlify**: Drag-and-drop deployment
-- **Vercel**: Optimized for static sites
+- **Netlify**: Drag-and-drop deployment (free tier)
+- **Vercel**: Optimized for static sites (free tier)
 - **GitHub Pages**: Free hosting for public repos
-- **Same server as backend**: Serve from Express static middleware
+- **Same server as backend**: Serve from Express static middleware (recommended)
 
 ### Production Checklist
 
