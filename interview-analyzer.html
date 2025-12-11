@@ -610,11 +610,8 @@
 
         async function callClaudeAPI(transcript, features) {
             // Backend API endpoint
-            // For development: http://localhost:3001
-            // For production: update this to your deployed backend URL
-            const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                ? 'http://localhost:3001'
-                : window.location.origin;
+            // Production backend URL on Render
+            const API_BASE_URL = 'https://product-thing.onrender.com';
 
             debugLog(`Making API request to backend at ${API_BASE_URL}...`, 'info');
             debugLog(`Transcript length: ${transcript.length} characters`, 'info');
