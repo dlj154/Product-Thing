@@ -329,6 +329,140 @@
                 font-size: 16px; /* Prevents zoom on focus */
             }
         }
+
+        /* Debug Panel */
+        .debug-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-top: 3px solid #667eea;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .debug-panel.show {
+            display: block;
+            transform: translateY(0);
+        }
+
+        .debug-header {
+            background: #2a2a2a;
+            padding: 10px 15px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .debug-title {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .debug-close {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .debug-clear {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            margin-right: 8px;
+        }
+
+        .debug-content {
+            padding: 15px;
+        }
+
+        .debug-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+
+        .debug-entry.error {
+            border-left-color: #f44336;
+            color: #ff6b6b;
+        }
+
+        .debug-entry.success {
+            border-left-color: #4caf50;
+            color: #81c784;
+        }
+
+        .debug-timestamp {
+            color: #888;
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .debug-message {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .btn-debug {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+            border: 2px solid #667eea;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 999;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .btn-debug:hover {
+            background: #2a2a2a;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-debug.has-errors {
+            animation: pulse 2s infinite;
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
 </head>
 <body>
@@ -385,6 +519,24 @@
         </div>
     </div>
 
+    <!-- Debug Panel -->
+    <button class="btn-debug" onclick="toggleDebugPanel()">🐛 Debug</button>
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-header">
+            <div class="debug-title">📊 Debug Console</div>
+            <div>
+                <button class="debug-clear" onclick="clearDebugLog()">Clear</button>
+                <button class="debug-close" onclick="toggleDebugPanel()">Close</button>
+            </div>
+        </div>
+        <div class="debug-content" id="debugContent">
+            <div class="debug-entry">
+                <div class="debug-timestamp">Ready</div>
+                <div class="debug-message">Debug panel initialized. Errors and API calls will appear here.</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Store cumulative analysis data
         let analysisData = {
@@ -412,9 +564,15 @@
             analyzeBtn.disabled = true;
             analyzeBtn.innerHTML = '<div class="spinner"></div>Analyzing...';
 
+            debugLog('Starting transcript analysis...', 'info');
+            debugLog(`Transcript length: ${transcript.length} characters`, 'info');
+            debugLog(`Features count: ${features.split('\n').filter(f => f.trim()).length}`, 'info');
+
             try {
                 // Call Claude API to analyze
                 const analysis = await callClaudeAPI(transcript, features);
+
+                debugLog('Analysis completed successfully', 'success');
 
                 // Store transcript
                 analysisData.transcripts.push({
@@ -436,7 +594,9 @@
 
             } catch (error) {
                 console.error('Analysis error:', error);
-                showError('Failed to analyze transcript. Please check your API key and try again.');
+                debugLog(`Analysis failed: ${error.message}`, 'error');
+                debugLog(error.stack || 'No stack trace available', 'error');
+                showError(error.message || 'Failed to analyze transcript. Please check your API key and try again.');
             } finally {
                 analyzeBtn.disabled = false;
                 analyzeBtn.innerHTML = '🔍 Analyze Transcript';
@@ -474,11 +634,31 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
 
             const apiKey = getAPIKey();
             if (!apiKey) {
+                debugLog('No API key provided', 'error');
                 throw new Error('API key is required. Please provide a valid Claude API key.');
             }
 
+            debugLog('API key found (length: ' + apiKey.length + ')', 'info');
+            debugLog('Making API request to Claude...', 'info');
+
             // Use Claude API via Anthropic SDK
             // Note: In a real implementation, you'd need to handle API keys securely
+            const requestBody = {
+                model: 'claude-3-5-sonnet-20241022',
+                max_tokens: 4096,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            };
+
+            debugLog('Request body:', 'info');
+            debugLog(JSON.stringify({
+                model: requestBody.model,
+                max_tokens: requestBody.max_tokens,
+                prompt_length: prompt.length
+            }, null, 2), 'info');
+
             const response = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
                 headers: {
@@ -486,49 +666,57 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
                     'x-api-key': apiKey,
                     'anthropic-version': '2023-06-01'
                 },
-                body: JSON.stringify({
-                    model: 'claude-3-5-sonnet-20241022',
-                    max_tokens: 4096,
-                    messages: [{
-                        role: 'user',
-                        content: prompt
-                    }]
-                })
+                body: JSON.stringify(requestBody)
             });
+
+            debugLog(`API Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 const errorMessage = errorData.error?.message || errorData.message || 'Unknown error';
                 console.error('API Error Details:', errorData);
+                debugLog('API Error Response:', 'error');
+                debugLog(errorData, 'error');
 
                 if (response.status === 401) {
                     // Clear invalid API key
                     localStorage.removeItem('claude_api_key');
+                    debugLog('Invalid API key - clearing saved key', 'error');
                     throw new Error('Invalid API key. Please check your API key and try again.');
                 } else if (response.status === 429) {
+                    debugLog('Rate limit exceeded', 'error');
                     throw new Error('Rate limit exceeded. Please wait a moment and try again.');
                 } else if (response.status === 400) {
+                    debugLog(`Bad request: ${errorMessage}`, 'error');
                     throw new Error(`Bad request: ${errorMessage}`);
                 } else {
+                    debugLog(`API error (${response.status}): ${errorMessage}`, 'error');
                     throw new Error(`API request failed (${response.status}): ${errorMessage}`);
                 }
             }
 
             const data = await response.json();
+            debugLog('API response received successfully', 'success');
 
             if (!data.content || !data.content[0] || !data.content[0].text) {
                 console.error('Unexpected API response format:', data);
+                debugLog('Unexpected response format:', 'error');
+                debugLog(data, 'error');
                 throw new Error('Unexpected API response format');
             }
 
             const content = data.content[0].text;
+            debugLog(`Response length: ${content.length} characters`, 'info');
 
             // Extract JSON from response
             const jsonMatch = content.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
+                debugLog('Successfully parsed JSON from response', 'success');
                 return JSON.parse(jsonMatch[0]);
             }
 
+            debugLog('No valid JSON found in response', 'error');
+            debugLog('Response content: ' + content.substring(0, 500), 'error');
             throw new Error('Failed to parse API response - no valid JSON found');
         }
 
@@ -741,7 +929,7 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
             errorDiv.className = 'error';
             errorDiv.innerHTML = `
                 <strong>Error:</strong> ${message}
-                <br><small>Check the browser console (F12) for more details.</small>
+                <br><small>Click the <strong>🐛 Debug</strong> button in the bottom-right corner for detailed error information.</small>
             `;
             document.querySelector('.content').appendChild(errorDiv);
             setTimeout(() => errorDiv.remove(), 8000);
@@ -754,6 +942,43 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
                 console.log('No API key found. You will be prompted when analyzing.');
             }
         });
+
+        // Debug Panel Functions
+        function toggleDebugPanel() {
+            const panel = document.getElementById('debugPanel');
+            panel.classList.toggle('show');
+        }
+
+        function clearDebugLog() {
+            const content = document.getElementById('debugContent');
+            content.innerHTML = '<div class="debug-entry"><div class="debug-timestamp">Cleared</div><div class="debug-message">Debug log cleared.</div></div>';
+            document.querySelector('.btn-debug').classList.remove('has-errors');
+        }
+
+        function debugLog(message, type = 'info') {
+            const content = document.getElementById('debugContent');
+            const entry = document.createElement('div');
+            entry.className = `debug-entry ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+            const messageStr = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+
+            entry.innerHTML = `
+                <div class="debug-timestamp">[${timestamp}] ${type.toUpperCase()}</div>
+                <div class="debug-message">${messageStr}</div>
+            `;
+
+            content.appendChild(entry);
+            content.scrollTop = content.scrollHeight;
+
+            // If it's an error, pulse the debug button
+            if (type === 'error') {
+                document.querySelector('.btn-debug').classList.add('has-errors');
+            }
+
+            // Also log to console
+            console.log(`[DEBUG ${type}]`, message);
+        }
     </script>
 </body>
 </html>
