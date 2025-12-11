@@ -292,11 +292,19 @@
 
         .error {
             background: #fee;
-            border: 1px solid #fcc;
+            border: 2px solid #f44336;
             color: #c33;
-            padding: 16px;
+            padding: 20px;
             border-radius: 8px;
             margin-top: 16px;
+            line-height: 1.6;
+            max-width: 100%;
+            font-size: 14px;
+        }
+
+        .error strong {
+            color: #d32f2f;
+            font-size: 16px;
         }
 
         .helper-text {
@@ -659,15 +667,35 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
                 prompt_length: prompt.length
             }, null, 2), 'info');
 
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01'
-                },
-                body: JSON.stringify(requestBody)
-            });
+            let response;
+            try {
+                response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+            } catch (fetchError) {
+                debugLog('Network/CORS error detected', 'error');
+                debugLog(fetchError.message, 'error');
+
+                const corsError = new Error(
+                    'Cannot connect to Claude API - CORS Error\n\n' +
+                    'The browser is blocking this request for security reasons. ' +
+                    'The Anthropic API cannot be called directly from web pages.\n\n' +
+                    'Solutions:\n' +
+                    '1. Use a backend server/proxy to make API calls\n' +
+                    '2. Deploy this as a server-side application\n' +
+                    '3. For testing: Install a CORS browser extension (search "CORS Unblock" in your browser\'s extension store)\n\n' +
+                    'Technical details: Browsers enforce CORS (Cross-Origin Resource Sharing) policies. ' +
+                    'Anthropic\'s API doesn\'t allow direct browser requests.'
+                );
+                corsError.isCorsError = true;
+                throw corsError;
+            }
 
             debugLog(`API Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
 
@@ -927,12 +955,20 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
             console.error('Error:', message);
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error';
+
+            // Format multiline error messages with proper line breaks
+            const formattedMessage = message.replace(/\n/g, '<br>');
+
             errorDiv.innerHTML = `
-                <strong>Error:</strong> ${message}
-                <br><small>Click the <strong>🐛 Debug</strong> button in the bottom-right corner for detailed error information.</small>
+                <strong>⚠️ Error:</strong><br>${formattedMessage}
+                <br><br><small>Click the <strong>🐛 Debug</strong> button in the bottom-right corner for detailed error information.</small>
             `;
             document.querySelector('.content').appendChild(errorDiv);
-            setTimeout(() => errorDiv.remove(), 8000);
+
+            // Don't auto-remove CORS errors - they need more attention
+            if (!message.includes('CORS')) {
+                setTimeout(() => errorDiv.remove(), 12000);
+            }
         }
 
         // Save API key management
