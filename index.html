@@ -500,9 +500,6 @@
                 <button class="btn-secondary" onclick="clearAll()">
                     🗑️ Clear All
                 </button>
-                <button class="btn-secondary" onclick="resetAPIKey()">
-                    🔑 Reset API Key
-                </button>
                 <button class="btn-export" id="exportBtn" onclick="exportResults()" disabled>
                     📥 Export Results
                 </button>
@@ -612,160 +609,82 @@
         }
 
         async function callClaudeAPI(transcript, features) {
-            const prompt = `You are analyzing a customer interview transcript to extract pain points and map them to potential product features.
+            // Backend API endpoint
+            // Production backend URL on Render
+            const API_BASE_URL = 'https://product-thing.onrender.com';
 
-INTERVIEW TRANSCRIPT:
-${transcript}
+            debugLog(`Making API request to backend at ${API_BASE_URL}...`, 'info');
+            debugLog(`Transcript length: ${transcript.length} characters`, 'info');
+            debugLog(`Features count: ${features.split('\n').filter(f => f.trim()).length}`, 'info');
 
-FEATURE LIST:
-${features}
-
-Please analyze this transcript and provide:
-
-1. Extract all pain points mentioned by the customer (problems, frustrations, difficulties, needs)
-2. For each pain point, provide a direct quote from the transcript that demonstrates it
-3. Map each pain point to one or more relevant features from the feature list
-4. Rank the features by how many pain points they address
-
-Return your analysis in the following JSON format:
-{
-  "painPoints": [
-    {
-      "painPoint": "Description of the pain point",
-      "quote": "Exact quote from transcript",
-      "mappedFeatures": ["Feature 1", "Feature 2"]
-    }
-  ]
-}
-
-Be thorough and extract all pain points, even subtle ones. Make sure quotes are exact excerpts from the transcript.`;
-
-            const apiKey = getAPIKey();
-            if (!apiKey) {
-                debugLog('No API key provided', 'error');
-                throw new Error('API key is required. Please provide a valid Claude API key.');
-            }
-
-            debugLog('API key found (length: ' + apiKey.length + ')', 'info');
-            debugLog('Making API request to Claude...', 'info');
-
-            // Use Claude API via Anthropic SDK
-            // Note: In a real implementation, you'd need to handle API keys securely
-            const requestBody = {
-                model: 'claude-3-5-sonnet-20241022',
-                max_tokens: 4096,
-                messages: [{
-                    role: 'user',
-                    content: prompt
-                }]
-            };
-
-            debugLog('Request body:', 'info');
-            debugLog(JSON.stringify({
-                model: requestBody.model,
-                max_tokens: requestBody.max_tokens,
-                prompt_length: prompt.length
-            }, null, 2), 'info');
-
-            let response;
             try {
-                response = await fetch('https://api.anthropic.com/v1/messages', {
+                const response = await fetch(`${API_BASE_URL}/api/analyze`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-api-key': apiKey,
-                        'anthropic-version': '2023-06-01'
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify({
+                        transcript,
+                        features
+                    })
                 });
-            } catch (fetchError) {
-                debugLog('Network/CORS error detected', 'error');
-                debugLog(fetchError.message, 'error');
 
-                const corsError = new Error(
-                    'Cannot connect to Claude API - CORS Error\n\n' +
-                    'The browser is blocking this request for security reasons. ' +
-                    'The Anthropic API cannot be called directly from web pages.\n\n' +
-                    'Solutions:\n' +
-                    '1. Use a backend server/proxy to make API calls\n' +
-                    '2. Deploy this as a server-side application\n' +
-                    '3. For testing: Install a CORS browser extension (search "CORS Unblock" in your browser\'s extension store)\n\n' +
-                    'Technical details: Browsers enforce CORS (Cross-Origin Resource Sharing) policies. ' +
-                    'Anthropic\'s API doesn\'t allow direct browser requests.'
-                );
-                corsError.isCorsError = true;
-                throw corsError;
-            }
+                debugLog(`API Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
 
-            debugLog(`API Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error || errorData.message || 'Unknown error';
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.error?.message || errorData.message || 'Unknown error';
-                console.error('API Error Details:', errorData);
-                debugLog('API Error Response:', 'error');
-                debugLog(errorData, 'error');
+                    debugLog('API Error Response:', 'error');
+                    debugLog(JSON.stringify(errorData, null, 2), 'error');
 
-                if (response.status === 401) {
-                    // Clear invalid API key
-                    localStorage.removeItem('claude_api_key');
-                    debugLog('Invalid API key - clearing saved key', 'error');
-                    throw new Error('Invalid API key. Please check your API key and try again.');
-                } else if (response.status === 429) {
-                    debugLog('Rate limit exceeded', 'error');
-                    throw new Error('Rate limit exceeded. Please wait a moment and try again.');
-                } else if (response.status === 400) {
-                    debugLog(`Bad request: ${errorMessage}`, 'error');
-                    throw new Error(`Bad request: ${errorMessage}`);
-                } else {
-                    debugLog(`API error (${response.status}): ${errorMessage}`, 'error');
-                    throw new Error(`API request failed (${response.status}): ${errorMessage}`);
+                    // Provide helpful error messages
+                    if (response.status === 401) {
+                        throw new Error('Backend authentication failed. Please check server API key configuration.');
+                    } else if (response.status === 429) {
+                        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+                    } else if (response.status === 400) {
+                        throw new Error(`Bad request: ${errorMessage}`);
+                    } else if (response.status === 500) {
+                        throw new Error(`Server error: ${errorMessage}`);
+                    } else if (response.status === 0 || !response.status) {
+                        throw new Error('Cannot connect to backend server. Make sure the backend is running on ' + API_BASE_URL);
+                    } else {
+                        throw new Error(`Request failed (${response.status}): ${errorMessage}`);
+                    }
                 }
-            }
 
-            const data = await response.json();
-            debugLog('API response received successfully', 'success');
+                const data = await response.json();
+                debugLog('API response received successfully', 'success');
 
-            if (!data.content || !data.content[0] || !data.content[0].text) {
-                console.error('Unexpected API response format:', data);
-                debugLog('Unexpected response format:', 'error');
-                debugLog(data, 'error');
-                throw new Error('Unexpected API response format');
-            }
-
-            const content = data.content[0].text;
-            debugLog(`Response length: ${content.length} characters`, 'info');
-
-            // Extract JSON from response
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                debugLog('Successfully parsed JSON from response', 'success');
-                return JSON.parse(jsonMatch[0]);
-            }
-
-            debugLog('No valid JSON found in response', 'error');
-            debugLog('Response content: ' + content.substring(0, 500), 'error');
-            throw new Error('Failed to parse API response - no valid JSON found');
-        }
-
-        function getAPIKey() {
-            // Try to get API key from various sources
-            let apiKey = localStorage.getItem('claude_api_key');
-
-            if (!apiKey) {
-                apiKey = prompt('Please enter your Claude API key (it will be saved locally):');
-                if (apiKey) {
-                    localStorage.setItem('claude_api_key', apiKey);
+                if (!data.success || !data.analysis) {
+                    debugLog('Invalid response format:', 'error');
+                    debugLog(JSON.stringify(data, null, 2), 'error');
+                    throw new Error('Invalid response format from server');
                 }
-            }
 
-            return apiKey;
-        }
+                if (data.metadata) {
+                    debugLog(`Analysis complete: ${data.metadata.painPointsFound} pain points found`, 'success');
+                }
 
-        function resetAPIKey() {
-            if (confirm('This will clear your saved API key. You will be prompted to enter it again on the next analysis.')) {
-                localStorage.removeItem('claude_api_key');
-                alert('API key has been cleared. You will be prompted to enter it again on the next analysis.');
+                return data.analysis;
+
+            } catch (error) {
+                // Handle network errors
+                if (error.message.includes('fetch') || error.name === 'TypeError') {
+                    debugLog('Network error - cannot connect to backend', 'error');
+                    throw new Error(
+                        'Cannot connect to backend server.\n\n' +
+                        `Expected backend at: ${API_BASE_URL}\n\n` +
+                        'Make sure:\n' +
+                        '1. Backend server is running (npm run dev in backend folder)\n' +
+                        '2. Backend is configured to accept requests from this origin\n' +
+                        '3. CORS is properly configured on the backend'
+                    );
+                }
+
+                debugLog(`API call failed: ${error.message}`, 'error');
+                throw error;
             }
         }
 
@@ -970,14 +889,6 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
                 setTimeout(() => errorDiv.remove(), 12000);
             }
         }
-
-        // Save API key management
-        window.addEventListener('load', () => {
-            const savedKey = localStorage.getItem('claude_api_key');
-            if (!savedKey) {
-                console.log('No API key found. You will be prompted when analyzing.');
-            }
-        });
 
         // Debug Panel Functions
         function toggleDebugPanel() {
