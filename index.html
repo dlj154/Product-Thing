@@ -490,7 +490,10 @@
             <div class="section">
                 <div class="section-title">Feature List</div>
                 <textarea id="features" rows="6" placeholder="List your predefined features (one per line)..."></textarea>
-                <div class="helper-text">Example: Email notifications, Dashboard analytics, Mobile app</div>
+                <div class="helper-text">
+                    Example: Email notifications, Dashboard analytics, Mobile app
+                    <span id="featureSaveStatus" style="margin-left: 12px; color: #10b981;"></span>
+                </div>
             </div>
 
             <div class="button-group">
@@ -543,6 +546,9 @@
     </div>
 
     <script>
+        // Backend API endpoint
+        const API_BASE_URL = 'https://product-thing.onrender.com';
+
         // Store cumulative analysis data
         let analysisData = {
             transcripts: [],
@@ -550,6 +556,9 @@
             featureMappings: {},
             featureCounts: {}
         };
+
+        // Feature save timer for debouncing
+        let featureSaveTimer = null;
 
         async function analyzeTranscript() {
             const transcript = document.getElementById('transcript').value.trim();
@@ -608,11 +617,109 @@
             }
         }
 
-        async function callClaudeAPI(transcript, features) {
-            // Backend API endpoint
-            // Production backend URL on Render
-            const API_BASE_URL = 'https://product-thing.onrender.com';
+        /**
+         * Load saved features from the database
+         */
+        async function loadSavedFeatures() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/features`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
 
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.features.length > 0) {
+                        document.getElementById('features').value = data.features.join('\n');
+                        updateSaveStatus(`Loaded ${data.features.length} saved features`, 'success');
+                        debugLog(`Loaded ${data.features.length} features from database`, 'success');
+                    }
+                }
+            } catch (error) {
+                // Silently fail - database might not be configured
+                console.log('Could not load saved features (database not configured)');
+            }
+        }
+
+        /**
+         * Save features to the database
+         */
+        async function saveFeatures() {
+            const featuresText = document.getElementById('features').value.trim();
+
+            if (!featuresText) {
+                return; // Don't save empty list
+            }
+
+            const featuresArray = featuresText.split('\n')
+                .filter(f => f.trim())
+                .map(f => f.trim());
+
+            try {
+                updateSaveStatus('Saving...', 'info');
+
+                const response = await fetch(`${API_BASE_URL}/api/features`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        features: featuresArray
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSaveStatus(`Saved ${data.count} features`, 'success');
+                    debugLog(`Saved ${data.count} features to database`, 'success');
+                } else {
+                    updateSaveStatus('Save failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving features:', error);
+                updateSaveStatus('Save failed (database not available)', 'error');
+            }
+        }
+
+        /**
+         * Auto-save features with debouncing
+         */
+        function autoSaveFeatures() {
+            clearTimeout(featureSaveTimer);
+            updateSaveStatus('Typing...', 'info');
+
+            featureSaveTimer = setTimeout(() => {
+                saveFeatures();
+            }, 1000); // Save 1 second after user stops typing
+        }
+
+        /**
+         * Update save status display
+         */
+        function updateSaveStatus(message, type = 'info') {
+            const statusElement = document.getElementById('featureSaveStatus');
+            statusElement.textContent = message;
+
+            // Set color based on type
+            if (type === 'success') {
+                statusElement.style.color = '#10b981';
+            } else if (type === 'error') {
+                statusElement.style.color = '#f44336';
+            } else {
+                statusElement.style.color = '#667eea';
+            }
+
+            // Clear status after 3 seconds for success/error messages
+            if (type !== 'info') {
+                setTimeout(() => {
+                    statusElement.textContent = '';
+                }, 3000);
+            }
+        }
+
+        async function callClaudeAPI(transcript, features) {
             debugLog(`Making API request to backend at ${API_BASE_URL}...`, 'info');
             debugLog(`Transcript length: ${transcript.length} characters`, 'info');
             debugLog(`Features count: ${features.split('\n').filter(f => f.trim()).length}`, 'info');
@@ -778,8 +885,8 @@
             });
         }
 
-        function clearAll() {
-            if (confirm('This will clear all transcripts and analysis data. Continue?')) {
+        async function clearAll() {
+            if (confirm('This will clear all transcripts, analysis data, and saved features. Continue?')) {
                 analysisData = {
                     transcripts: [],
                     painPoints: [],
@@ -791,6 +898,23 @@
                 document.getElementById('features').value = '';
                 document.getElementById('results').classList.remove('show');
                 document.getElementById('exportBtn').disabled = true;
+
+                // Delete features from database
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/features`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    if (response.ok) {
+                        updateSaveStatus('All data cleared', 'success');
+                        debugLog('Features deleted from database', 'success');
+                    }
+                } catch (error) {
+                    console.log('Could not delete from database (not configured)');
+                }
             }
         }
 
@@ -926,6 +1050,18 @@
             // Also log to console
             console.log(`[DEBUG ${type}]`, message);
         }
+
+        // Initialize page
+        window.addEventListener('DOMContentLoaded', () => {
+            // Load saved features on page load
+            loadSavedFeatures();
+
+            // Add event listener for auto-save
+            const featuresTextarea = document.getElementById('features');
+            featuresTextarea.addEventListener('input', autoSaveFeatures);
+
+            debugLog('Page initialized - feature persistence enabled', 'success');
+        });
     </script>
 </body>
 </html>
