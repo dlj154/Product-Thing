@@ -77,7 +77,7 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
 
     // Call Claude API
     const message = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
       messages: [{
         role: 'user',
