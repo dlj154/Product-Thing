@@ -21,6 +21,56 @@ async function initDatabase() {
       ON features(user_id)
     `);
 
+    // Create transcripts table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS transcripts (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'default',
+        transcript_text TEXT NOT NULL,
+        summary TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Create index for transcripts
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_transcripts_user_id
+      ON transcripts(user_id)
+    `);
+
+    // Create pain_points table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pain_points (
+        id SERIAL PRIMARY KEY,
+        transcript_id INTEGER REFERENCES transcripts(id) ON DELETE CASCADE,
+        pain_point TEXT NOT NULL,
+        quote TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Create index for pain_points
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_pain_points_transcript_id
+      ON pain_points(transcript_id)
+    `);
+
+    // Create feature_mappings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS feature_mappings (
+        id SERIAL PRIMARY KEY,
+        pain_point_id INTEGER REFERENCES pain_points(id) ON DELETE CASCADE,
+        feature_name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Create index for feature_mappings
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_feature_mappings_pain_point_id
+      ON feature_mappings(pain_point_id)
+    `);
+
     console.log('✓ Database schema initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);

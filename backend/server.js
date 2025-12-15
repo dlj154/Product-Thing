@@ -45,6 +45,9 @@ app.use('/api/analyze', analyzeRouter);
 if (process.env.DATABASE_URL) {
   const featuresRouter = require('./routes/features');
   app.use('/api/features', featuresRouter);
+
+  const transcriptsRouter = require('./routes/transcripts');
+  app.use('/api/transcripts', transcriptsRouter);
 }
 
 // Serve static files (optional - for serving frontend from same server)
