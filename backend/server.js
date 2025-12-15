@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const analyzeRouter = require('./routes/analyze');
+const { initDatabase } = require('./db/init');
 
 // Load environment variables
 dotenv.config();
@@ -13,7 +14,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'DELETE'],
   credentials: true
 }));
 
@@ -40,6 +41,12 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/analyze', analyzeRouter);
 
+// Features routes (only if DATABASE_URL is configured)
+if (process.env.DATABASE_URL) {
+  const featuresRouter = require('./routes/features');
+  app.use('/api/features', featuresRouter);
+}
+
 // Serve static files (optional - for serving frontend from same server)
 app.use(express.static(path.join(__dirname, '../')));
 
@@ -60,9 +67,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
+// Initialize database and start server
+async function startServer() {
+  // Initialize database if DATABASE_URL is configured
+  if (process.env.DATABASE_URL) {
+    try {
+      await initDatabase();
+      console.log('✓ Database ready');
+    } catch (error) {
+      console.error('⚠️  Database initialization failed:', error.message);
+      console.log('Server will continue without database features');
+    }
+  } else {
+    console.log('ℹ️  DATABASE_URL not configured - running without database features');
+  }
+
+  // Start server
+  app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════════════╗
 ║   Interview Analyzer Backend Server                   ║
 ╚════════════════════════════════════════════════════════╝
@@ -71,10 +93,14 @@ app.listen(PORT, () => {
 🌍 Environment: ${process.env.NODE_ENV || 'development'}
 🔐 CORS enabled for: ${process.env.CORS_ORIGIN || '*'}
 📊 Health check: http://localhost:${PORT}/health
+${process.env.DATABASE_URL ? '💾 Database: Connected' : '💾 Database: Not configured'}
 
 Ready to analyze interviews! 🎯
-  `);
-});
+    `);
+  });
+}
+
+startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
