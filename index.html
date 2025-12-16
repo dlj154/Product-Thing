@@ -13,39 +13,148 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
             min-height: 100vh;
+            display: flex;
+            color: #000000;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 260px;
+            background: #ffffff;
+            border-right: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
             padding: 20px;
+            border-bottom: 1px solid #e5e5e5;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        .app-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-section {
+            padding: 12px;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6b6b6b;
+            padding: 8px 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            padding: 10px 12px;
+            margin: 2px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: #000000;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover {
+            background: #f0f0f0;
+        }
+
+        .nav-item.active {
+            background: #e5e5e5;
+            font-weight: 700;
+        }
+
+        .history-section {
+            margin-top: auto;
+            border-top: 1px solid #e5e5e5;
+            padding-top: 12px;
+        }
+
+        .history-item {
+            padding: 10px 12px;
+            margin: 2px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: #000000;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-item:hover {
+            background: #f0f0f0;
+        }
+
+        .history-item.active {
+            background: #e5e5e5;
+        }
+
+        .history-item-summary {
+            font-weight: 500;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+        .history-item-date {
+            font-size: 11px;
+            color: #6b6b6b;
         }
 
-        h1 {
-            font-size: 28px;
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            min-height: 100vh;
+            background: #ffffff;
+        }
+
+        .page {
+            display: none;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #000000;
             margin-bottom: 8px;
         }
 
-        .subtitle {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .content {
-            padding: 30px;
+        .page-subtitle {
+            font-size: 16px;
+            color: #6b6b6b;
+            margin-bottom: 32px;
         }
 
         .section {
@@ -56,25 +165,13 @@
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 12px;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-title::before {
-            content: '';
-            display: inline-block;
-            width: 4px;
-            height: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 2px;
+            color: #000000;
         }
 
         textarea {
             width: 100%;
             padding: 16px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #d1d1d1;
             border-radius: 8px;
             font-family: inherit;
             font-size: 14px;
@@ -84,7 +181,7 @@
 
         textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #000000;
         }
 
         .button-group {
@@ -95,189 +192,174 @@
         }
 
         button {
-            padding: 14px 28px;
-            border: none;
+            padding: 12px 24px;
+            border: 1px solid #d1d1d1;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             font-family: inherit;
+            background: #ffffff;
+            color: #000000;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            flex: 1;
-            min-width: 200px;
+            background: #000000;
+            color: #ffffff;
+            border-color: #000000;
         }
 
         .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            background: #2d2d2d;
         }
 
         .btn-primary:disabled {
-            opacity: 0.6;
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
-        .btn-secondary {
-            background: #f5f5f5;
-            color: #333;
+        button:hover:not(.btn-primary):not(:disabled) {
+            background: #f0f0f0;
         }
 
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
-        .btn-export {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-export:hover:not(:disabled) {
-            background: #059669;
-        }
-
-        .btn-export:disabled {
-            opacity: 0.6;
+        button:disabled {
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
         .results {
-            margin-top: 30px;
-            display: none;
-        }
-
-        .results.show {
-            display: block;
+            margin-top: 40px;
         }
 
         .results-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e5e5;
         }
 
         .results-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+            color: #000000;
         }
 
         .transcript-count {
-            background: #667eea;
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
+            background: #f0f0f0;
+            color: #000000;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
         }
 
         .results-section {
-            margin-bottom: 30px;
-            background: #f9fafb;
-            border-radius: 12px;
-            padding: 20px;
+            margin-bottom: 32px;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 24px;
+            border: 1px solid #e5e5e5;
         }
 
         .results-section h3 {
             font-size: 18px;
             margin-bottom: 16px;
-            color: #667eea;
+            color: #000000;
+            font-weight: 600;
         }
 
         .pain-point {
-            background: white;
+            background: #ffffff;
             padding: 16px;
             border-radius: 8px;
             margin-bottom: 12px;
-            border-left: 4px solid #667eea;
+            border: 1px solid #e5e5e5;
         }
 
         .pain-point-text {
-            font-weight: 600;
+            font-weight: 500;
             margin-bottom: 8px;
-            color: #333;
+            color: #000000;
         }
 
         .quote {
             font-style: italic;
-            color: #666;
-            padding: 8px 12px;
+            color: #6b6b6b;
+            padding: 12px;
             background: #f5f5f5;
-            border-radius: 4px;
+            border-radius: 6px;
             margin: 8px 0;
             font-size: 14px;
+            border-left: 3px solid #d1d1d1;
         }
 
         .features-list {
-            margin-top: 8px;
+            margin-top: 12px;
             padding-left: 20px;
         }
 
         .features-list li {
-            color: #555;
-            margin: 4px 0;
+            color: #000000;
+            margin: 6px 0;
         }
 
         .feature-priority {
-            background: white;
+            background: #ffffff;
             padding: 16px;
             border-radius: 8px;
             margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid #e5e5e5;
         }
 
         .feature-name {
-            font-weight: 600;
-            color: #333;
+            font-weight: 500;
+            color: #000000;
         }
 
         .priority-badge {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
         .priority-count {
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
+            background: #000000;
+            color: #ffffff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
         }
 
         .priority-bar {
             width: 100px;
             height: 8px;
-            background: #e0e0e0;
+            background: #e5e5e5;
             border-radius: 4px;
             overflow: hidden;
         }
 
         .priority-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: #000000;
             transition: width 0.3s;
         }
 
         .loading {
             text-align: center;
             padding: 40px;
-            color: #667eea;
+            color: #6b6b6b;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #000000;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -292,13 +374,12 @@
 
         .error {
             background: #fee;
-            border: 2px solid #f44336;
+            border: 1px solid #f44336;
             color: #c33;
             padding: 20px;
             border-radius: 8px;
             margin-top: 16px;
             line-height: 1.6;
-            max-width: 100%;
             font-size: 14px;
         }
 
@@ -309,239 +390,211 @@
 
         .helper-text {
             font-size: 13px;
-            color: #666;
+            color: #6b6b6b;
             margin-top: 6px;
         }
 
+        .save-status {
+            margin-left: 12px;
+            color: #10b981;
+            font-size: 13px;
+        }
+
+        .settings-placeholder {
+            text-align: center;
+            padding: 80px 40px;
+            color: #6b6b6b;
+        }
+
+        .settings-placeholder h2 {
+            font-size: 24px;
+            color: #000000;
+            margin-bottom: 12px;
+        }
+
         @media (max-width: 768px) {
-            .content {
-                padding: 20px;
+            .sidebar {
+                width: 200px;
             }
 
-            h1 {
+            .main-content {
+                margin-left: 200px;
+            }
+
+            .page {
+                padding: 24px;
+            }
+
+            .page-title {
                 font-size: 24px;
             }
 
             .button-group {
                 flex-direction: column;
             }
+        }
 
-            .btn-primary {
-                min-width: 100%;
+        /* Responsive - hide sidebar on mobile */
+        @media (max-width: 640px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+                z-index: 1000;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 999;
+                background: #000000;
+                color: #ffffff;
+                border: none;
+                padding: 10px;
+                border-radius: 6px;
+                cursor: pointer;
             }
         }
 
-        /* iPad specific optimizations */
-        @media (min-width: 768px) and (max-width: 1024px) {
-            textarea {
-                font-size: 16px; /* Prevents zoom on focus */
-            }
-        }
-
-        /* Debug Panel */
-        .debug-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1a1a1a;
-            color: #0f0;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow-y: auto;
-            border-top: 3px solid #667eea;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-            z-index: 1000;
+        .mobile-menu-btn {
             display: none;
-            transform: translateY(100%);
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .debug-panel.show {
-            display: block;
-            transform: translateY(0);
-        }
-
-        .debug-header {
-            background: #2a2a2a;
-            padding: 10px 15px;
-            border-bottom: 1px solid #444;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .debug-title {
-            color: #667eea;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .debug-close {
-            background: #f44336;
-            color: white;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-family: inherit;
-        }
-
-        .debug-clear {
-            background: #ff9800;
-            color: white;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-family: inherit;
-            margin-right: 8px;
-        }
-
-        .debug-content {
-            padding: 15px;
-        }
-
-        .debug-entry {
-            margin-bottom: 10px;
-            padding: 8px;
-            background: #2a2a2a;
-            border-radius: 4px;
-            border-left: 3px solid #667eea;
-        }
-
-        .debug-entry.error {
-            border-left-color: #f44336;
-            color: #ff6b6b;
-        }
-
-        .debug-entry.success {
-            border-left-color: #4caf50;
-            color: #81c784;
-        }
-
-        .debug-timestamp {
-            color: #888;
-            font-size: 10px;
-            margin-bottom: 4px;
-        }
-
-        .debug-message {
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .btn-debug {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #1a1a1a;
-            color: #0f0;
-            border: 2px solid #667eea;
-            padding: 12px 20px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            z-index: 999;
-            font-family: inherit;
-            transition: all 0.3s;
-        }
-
-        .btn-debug:hover {
-            background: #2a2a2a;
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-debug.has-errors {
-            animation: pulse 2s infinite;
-            background: #f44336;
-            color: white;
-            border-color: #f44336;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Interview Analysis Tool</h1>
-            <div class="subtitle">Extract pain points and map them to features using AI</div>
-        </header>
+    <!-- Mobile menu button -->
+    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
 
-        <div class="content">
-            <div class="section">
-                <div class="section-title">Interview Transcript</div>
-                <textarea id="transcript" rows="8" placeholder="Paste your customer interview transcript here..."></textarea>
-                <div class="helper-text">Tip: Include the full conversation with customer responses</div>
-            </div>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="app-title">Product Thing</div>
+        </div>
 
-            <div class="section">
-                <div class="section-title">Feature List</div>
-                <textarea id="features" rows="6" placeholder="List your predefined features (one per line)..."></textarea>
-                <div class="helper-text">
-                    Example: Email notifications, Dashboard analytics, Mobile app
-                    <span id="featureSaveStatus" style="margin-left: 12px; color: #10b981;"></span>
+        <div class="sidebar-content">
+            <!-- Primary Navigation -->
+            <div class="nav-section">
+                <div class="nav-item active" onclick="navigateTo('analyze')" data-page="analyze">
+                    Analyze Transcript
+                </div>
+                <div class="nav-item" onclick="navigateTo('features')" data-page="features">
+                    Features
+                </div>
+                <div class="nav-item" onclick="navigateTo('settings')" data-page="settings">
+                    Settings
                 </div>
             </div>
 
-            <div class="button-group">
-                <button class="btn-primary" id="analyzeBtn" onclick="analyzeTranscript()">
-                    🔍 Analyze Transcript
-                </button>
-                <button class="btn-secondary" onclick="clearAll()">
-                    🗑️ Clear All
-                </button>
-                <button class="btn-export" id="exportBtn" onclick="exportResults()" disabled>
-                    📥 Export Results
-                </button>
-            </div>
-
-            <div id="results" class="results">
-                <div class="results-header">
-                    <div class="results-title">Analysis Results</div>
-                    <div class="transcript-count" id="transcriptCount">0 transcripts analyzed</div>
-                </div>
-
-                <div class="results-section">
-                    <h3>📌 Pain Points & Feature Mappings</h3>
-                    <div id="painPoints"></div>
-                </div>
-
-                <div class="results-section">
-                    <h3>🎯 Feature Priority Ranking</h3>
-                    <div id="featurePriority"></div>
+            <!-- Analysis History -->
+            <div class="nav-section history-section">
+                <div class="nav-section-title">ANALYSIS HISTORY</div>
+                <div id="historyList">
+                    <div style="padding: 12px; color: #6b6b6b; font-size: 13px;">
+                        No transcripts yet
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Debug Panel -->
-    <button class="btn-debug" onclick="toggleDebugPanel()">🐛 Debug</button>
-    <div class="debug-panel" id="debugPanel">
-        <div class="debug-header">
-            <div class="debug-title">📊 Debug Console</div>
-            <div>
-                <button class="debug-clear" onclick="clearDebugLog()">Clear</button>
-                <button class="debug-close" onclick="toggleDebugPanel()">Close</button>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Analyze Transcript Page -->
+        <div class="page active" id="page-analyze">
+            <h1 class="page-title">Analyze Transcript</h1>
+            <p class="page-subtitle">Extract pain points and map them to features using AI</p>
+
+            <div class="section">
+                <div class="section-title">Interview Transcript</div>
+                <textarea id="transcript" rows="10" placeholder="Paste your customer interview transcript here..."></textarea>
+                <div class="helper-text">Tip: Include the full conversation with customer responses</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" id="analyzeBtn" onclick="analyzeTranscript()">
+                    Analyze Transcript
+                </button>
+                <button onclick="clearTranscriptField()">
+                    Clear
+                </button>
+            </div>
+
+            <div id="results" class="results" style="display: none;">
+                <div class="results-header">
+                    <div class="results-title">Analysis Results</div>
+                    <div class="transcript-count" id="transcriptCount">1 transcript analyzed</div>
+                </div>
+
+                <div class="results-section">
+                    <h3>Pain Points & Feature Mappings</h3>
+                    <div id="painPoints"></div>
+                </div>
+
+                <div class="results-section">
+                    <h3>Feature Priority Ranking</h3>
+                    <div id="featurePriority"></div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="exportResults()">
+                        Export Results
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="debug-content" id="debugContent">
-            <div class="debug-entry">
-                <div class="debug-timestamp">Ready</div>
-                <div class="debug-message">Debug panel initialized. Errors and API calls will appear here.</div>
+
+        <!-- Features Page -->
+        <div class="page" id="page-features">
+            <h1 class="page-title">Features</h1>
+            <p class="page-subtitle">Manage your predefined feature list</p>
+
+            <div class="section">
+                <div class="section-title">Feature List</div>
+                <textarea id="features" rows="12" placeholder="List your predefined features (one per line)..."></textarea>
+                <div class="helper-text">
+                    Example: Email notifications, Dashboard analytics, Mobile app
+                    <span id="featureSaveStatus" class="save-status"></span>
+                </div>
             </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="saveFeatures()">
+                    Save Features
+                </button>
+                <button onclick="clearFeatures()">
+                    Clear All
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="page" id="page-settings">
+            <h1 class="page-title">Settings</h1>
+            <p class="page-subtitle">Configure your preferences</p>
+
+            <div class="settings-placeholder">
+                <h2>Settings Coming Soon</h2>
+                <p>This page will contain application settings and preferences.</p>
+            </div>
+        </div>
+
+        <!-- Transcript Detail Page -->
+        <div class="page" id="page-transcript-detail">
+            <div style="margin-bottom: 20px;">
+                <button onclick="navigateTo('analyze')">← Back to Analyze</button>
+            </div>
+
+            <h1 class="page-title">Transcript Details</h1>
+            <div id="transcriptDetailContent"></div>
         </div>
     </div>
 
@@ -549,17 +602,135 @@
         // Backend API endpoint
         const API_BASE_URL = 'https://product-thing.onrender.com';
 
-        // Store cumulative analysis data
-        let analysisData = {
-            transcripts: [],
-            painPoints: [],
-            featureMappings: {},
-            featureCounts: {}
-        };
-
-        // Feature save timer for debouncing
+        // Current state
+        let currentAnalysis = null;
         let featureSaveTimer = null;
 
+        // Navigation
+        function navigateTo(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Remove active from all nav items
+            document.querySelectorAll('.nav-item, .history-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Show selected page
+            const pageElement = document.getElementById(`page-${pageName}`);
+            if (pageElement) {
+                pageElement.classList.add('active');
+            }
+
+            // Set active nav item
+            const navItem = document.querySelector(`[data-page="${pageName}"]`);
+            if (navItem) {
+                navItem.classList.add('active');
+            }
+
+            // Close mobile menu
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('mobile-open');
+        }
+
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+
+        // Load analysis history
+        async function loadAnalysisHistory() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.transcripts.length > 0) {
+                        displayAnalysisHistory(data.transcripts);
+                    }
+                }
+            } catch (error) {
+                console.log('Could not load analysis history');
+            }
+        }
+
+        function displayAnalysisHistory(transcripts) {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+
+            transcripts.forEach(transcript => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.onclick = () => viewTranscript(transcript.id);
+
+                const summary = transcript.summary || 'Untitled Analysis';
+                const date = new Date(transcript.created_at).toLocaleDateString();
+
+                item.innerHTML = `
+                    <div class="history-item-summary">${summary}</div>
+                    <div class="history-item-date">${date}</div>
+                `;
+
+                historyList.appendChild(item);
+            });
+        }
+
+        async function viewTranscript(transcriptId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts/${transcriptId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        displayTranscriptDetail(data.transcript);
+                        navigateTo('transcript-detail');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading transcript:', error);
+            }
+        }
+
+        function displayTranscriptDetail(transcript) {
+            const content = document.getElementById('transcriptDetailContent');
+
+            let html = `
+                <p class="page-subtitle">${new Date(transcript.createdAt).toLocaleString()}</p>
+
+                <div class="results-section">
+                    <h3>Original Transcript</h3>
+                    <div class="quote">${transcript.transcriptText}</div>
+                </div>
+
+                <div class="results-section">
+                    <h3>Pain Points & Feature Mappings</h3>
+            `;
+
+            transcript.painPoints.forEach((pp, index) => {
+                const featuresHTML = pp.mappedFeatures.length > 0
+                    ? `<ul class="features-list">
+                        ${pp.mappedFeatures.map(f => `<li>${f}</li>`).join('')}
+                       </ul>`
+                    : '<p style="color: #6b6b6b;">No features mapped</p>';
+
+                html += `
+                    <div class="pain-point">
+                        <div class="pain-point-text">${index + 1}. ${pp.painPoint}</div>
+                        <div class="quote">"${pp.quote}"</div>
+                        <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
+                            Mapped Features:
+                        </div>
+                        ${featuresHTML}
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            content.innerHTML = html;
+        }
+
+        // Analyze transcript
         async function analyzeTranscript() {
             const transcript = document.getElementById('transcript').value.trim();
             const features = document.getElementById('features').value.trim();
@@ -578,256 +749,89 @@
             analyzeBtn.disabled = true;
             analyzeBtn.innerHTML = '<div class="spinner"></div>Analyzing...';
 
-            debugLog('Starting transcript analysis...', 'info');
-            debugLog(`Transcript length: ${transcript.length} characters`, 'info');
-            debugLog(`Features count: ${features.split('\n').filter(f => f.trim()).length}`, 'info');
-
             try {
                 // Call Claude API to analyze
                 const analysis = await callClaudeAPI(transcript, features);
 
-                debugLog('Analysis completed successfully', 'success');
+                // Generate summary (first 60 chars of transcript)
+                const summary = transcript.substring(0, 60) + (transcript.length > 60 ? '...' : '');
 
-                // Store transcript
-                analysisData.transcripts.push({
-                    timestamp: new Date().toISOString(),
-                    transcript: transcript
-                });
-
-                // Process and merge analysis results
-                processAnalysis(analysis);
+                // Save to database
+                await saveTranscriptToDatabase(transcript, summary, analysis.painPoints);
 
                 // Display results
-                displayResults();
+                currentAnalysis = analysis;
+                displayResults(analysis);
 
-                // Enable export
-                document.getElementById('exportBtn').disabled = false;
-
-                // Clear transcript field for next entry
+                // Clear transcript field
                 document.getElementById('transcript').value = '';
+
+                // Reload history
+                loadAnalysisHistory();
 
             } catch (error) {
                 console.error('Analysis error:', error);
-                debugLog(`Analysis failed: ${error.message}`, 'error');
-                debugLog(error.stack || 'No stack trace available', 'error');
-                showError(error.message || 'Failed to analyze transcript. Please check your API key and try again.');
+                showError(error.message || 'Failed to analyze transcript. Please try again.');
             } finally {
                 analyzeBtn.disabled = false;
-                analyzeBtn.innerHTML = '🔍 Analyze Transcript';
-            }
-        }
-
-        /**
-         * Load saved features from the database
-         */
-        async function loadSavedFeatures() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/features`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.features.length > 0) {
-                        document.getElementById('features').value = data.features.join('\n');
-                        updateSaveStatus(`Loaded ${data.features.length} saved features`, 'success');
-                        debugLog(`Loaded ${data.features.length} features from database`, 'success');
-                    }
-                }
-            } catch (error) {
-                // Silently fail - database might not be configured
-                console.log('Could not load saved features (database not configured)');
-            }
-        }
-
-        /**
-         * Save features to the database
-         */
-        async function saveFeatures() {
-            const featuresText = document.getElementById('features').value.trim();
-
-            if (!featuresText) {
-                return; // Don't save empty list
-            }
-
-            const featuresArray = featuresText.split('\n')
-                .filter(f => f.trim())
-                .map(f => f.trim());
-
-            try {
-                updateSaveStatus('Saving...', 'info');
-
-                const response = await fetch(`${API_BASE_URL}/api/features`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        features: featuresArray
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    updateSaveStatus(`Saved ${data.count} features`, 'success');
-                    debugLog(`Saved ${data.count} features to database`, 'success');
-                } else {
-                    updateSaveStatus('Save failed', 'error');
-                }
-            } catch (error) {
-                console.error('Error saving features:', error);
-                updateSaveStatus('Save failed (database not available)', 'error');
-            }
-        }
-
-        /**
-         * Auto-save features with debouncing
-         */
-        function autoSaveFeatures() {
-            clearTimeout(featureSaveTimer);
-            updateSaveStatus('Typing...', 'info');
-
-            featureSaveTimer = setTimeout(() => {
-                saveFeatures();
-            }, 1000); // Save 1 second after user stops typing
-        }
-
-        /**
-         * Update save status display
-         */
-        function updateSaveStatus(message, type = 'info') {
-            const statusElement = document.getElementById('featureSaveStatus');
-            statusElement.textContent = message;
-
-            // Set color based on type
-            if (type === 'success') {
-                statusElement.style.color = '#10b981';
-            } else if (type === 'error') {
-                statusElement.style.color = '#f44336';
-            } else {
-                statusElement.style.color = '#667eea';
-            }
-
-            // Clear status after 3 seconds for success/error messages
-            if (type !== 'info') {
-                setTimeout(() => {
-                    statusElement.textContent = '';
-                }, 3000);
+                analyzeBtn.innerHTML = 'Analyze Transcript';
             }
         }
 
         async function callClaudeAPI(transcript, features) {
-            debugLog(`Making API request to backend at ${API_BASE_URL}...`, 'info');
-            debugLog(`Transcript length: ${transcript.length} characters`, 'info');
-            debugLog(`Features count: ${features.split('\n').filter(f => f.trim()).length}`, 'info');
+            const response = await fetch(`${API_BASE_URL}/api/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    transcript,
+                    features
+                })
+            });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.error || errorData.message || 'Unknown error';
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+
+            if (!data.success || !data.analysis) {
+                throw new Error('Invalid response format from server');
+            }
+
+            return data.analysis;
+        }
+
+        async function saveTranscriptToDatabase(transcriptText, summary, painPoints) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/analyze`, {
+                await fetch(`${API_BASE_URL}/api/transcripts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        transcript,
-                        features
+                        transcriptText,
+                        summary,
+                        painPoints
                     })
                 });
-
-                debugLog(`API Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData.error || errorData.message || 'Unknown error';
-
-                    debugLog('API Error Response:', 'error');
-                    debugLog(JSON.stringify(errorData, null, 2), 'error');
-
-                    // Provide helpful error messages
-                    if (response.status === 401) {
-                        throw new Error('Backend authentication failed. Please check server API key configuration.');
-                    } else if (response.status === 429) {
-                        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
-                    } else if (response.status === 400) {
-                        throw new Error(`Bad request: ${errorMessage}`);
-                    } else if (response.status === 500) {
-                        throw new Error(`Server error: ${errorMessage}`);
-                    } else if (response.status === 0 || !response.status) {
-                        throw new Error('Cannot connect to backend server. Make sure the backend is running on ' + API_BASE_URL);
-                    } else {
-                        throw new Error(`Request failed (${response.status}): ${errorMessage}`);
-                    }
-                }
-
-                const data = await response.json();
-                debugLog('API response received successfully', 'success');
-
-                if (!data.success || !data.analysis) {
-                    debugLog('Invalid response format:', 'error');
-                    debugLog(JSON.stringify(data, null, 2), 'error');
-                    throw new Error('Invalid response format from server');
-                }
-
-                if (data.metadata) {
-                    debugLog(`Analysis complete: ${data.metadata.painPointsFound} pain points found`, 'success');
-                }
-
-                return data.analysis;
-
             } catch (error) {
-                // Handle network errors
-                if (error.message.includes('fetch') || error.name === 'TypeError') {
-                    debugLog('Network error - cannot connect to backend', 'error');
-                    throw new Error(
-                        'Cannot connect to backend server.\n\n' +
-                        `Expected backend at: ${API_BASE_URL}\n\n` +
-                        'Make sure:\n' +
-                        '1. Backend server is running (npm run dev in backend folder)\n' +
-                        '2. Backend is configured to accept requests from this origin\n' +
-                        '3. CORS is properly configured on the backend'
-                    );
-                }
-
-                debugLog(`API call failed: ${error.message}`, 'error');
-                throw error;
+                console.log('Could not save to database (not configured)');
             }
         }
 
-        function processAnalysis(analysis) {
-            // Add new pain points
-            if (analysis.painPoints) {
-                analysis.painPoints.forEach(pp => {
-                    analysisData.painPoints.push({
-                        ...pp,
-                        transcriptIndex: analysisData.transcripts.length - 1
-                    });
-
-                    // Update feature counts
-                    pp.mappedFeatures.forEach(feature => {
-                        if (!analysisData.featureCounts[feature]) {
-                            analysisData.featureCounts[feature] = 0;
-                        }
-                        analysisData.featureCounts[feature]++;
-                    });
-                });
-            }
-        }
-
-        function displayResults() {
+        function displayResults(analysis) {
             const resultsDiv = document.getElementById('results');
-            resultsDiv.classList.add('show');
-
-            // Update transcript count
-            document.getElementById('transcriptCount').textContent =
-                `${analysisData.transcripts.length} transcript${analysisData.transcripts.length > 1 ? 's' : ''} analyzed`;
+            resultsDiv.style.display = 'block';
 
             // Display pain points
             const painPointsDiv = document.getElementById('painPoints');
             painPointsDiv.innerHTML = '';
 
-            analysisData.painPoints.forEach((pp, index) => {
+            analysis.painPoints.forEach((pp, index) => {
                 const ppDiv = document.createElement('div');
                 ppDiv.className = 'pain-point';
 
@@ -835,12 +839,12 @@
                     ? `<ul class="features-list">
                         ${pp.mappedFeatures.map(f => `<li>${f}</li>`).join('')}
                        </ul>`
-                    : '<p style="color: #999;">No features mapped</p>';
+                    : '<p style="color: #6b6b6b;">No features mapped</p>';
 
                 ppDiv.innerHTML = `
                     <div class="pain-point-text">${index + 1}. ${pp.painPoint}</div>
                     <div class="quote">"${pp.quote}"</div>
-                    <div style="margin-top: 8px; font-size: 14px; font-weight: 600; color: #667eea;">
+                    <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
                         Mapped Features:
                     </div>
                     ${featuresHTML}
@@ -848,20 +852,28 @@
                 painPointsDiv.appendChild(ppDiv);
             });
 
-            // Display feature priority ranking
-            displayFeaturePriority();
+            // Display feature priority
+            displayFeaturePriority(analysis.painPoints);
         }
 
-        function displayFeaturePriority() {
+        function displayFeaturePriority(painPoints) {
             const priorityDiv = document.getElementById('featurePriority');
             priorityDiv.innerHTML = '';
 
-            // Sort features by count
-            const sortedFeatures = Object.entries(analysisData.featureCounts)
+            // Count features
+            const featureCounts = {};
+            painPoints.forEach(pp => {
+                pp.mappedFeatures.forEach(feature => {
+                    featureCounts[feature] = (featureCounts[feature] || 0) + 1;
+                });
+            });
+
+            // Sort by count
+            const sortedFeatures = Object.entries(featureCounts)
                 .sort((a, b) => b[1] - a[1]);
 
             if (sortedFeatures.length === 0) {
-                priorityDiv.innerHTML = '<p style="color: #999;">No features mapped yet</p>';
+                priorityDiv.innerHTML = '<p style="color: #6b6b6b;">No features mapped yet</p>';
                 return;
             }
 
@@ -885,98 +897,149 @@
             });
         }
 
-        async function clearAll() {
-            if (confirm('This will clear all transcripts, analysis data, and saved features. Continue?')) {
-                analysisData = {
-                    transcripts: [],
-                    painPoints: [],
-                    featureMappings: {},
-                    featureCounts: {}
-                };
+        // Features management
+        async function loadSavedFeatures() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/features`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.features.length > 0) {
+                        document.getElementById('features').value = data.features.join('\n');
+                        updateSaveStatus(`Loaded ${data.features.length} saved features`, 'success');
+                    }
+                }
+            } catch (error) {
+                console.log('Could not load saved features');
+            }
+        }
 
-                document.getElementById('transcript').value = '';
+        async function saveFeatures() {
+            const featuresText = document.getElementById('features').value.trim();
+
+            if (!featuresText) {
+                alert('Please enter some features first');
+                return;
+            }
+
+            const featuresArray = featuresText.split('\n')
+                .filter(f => f.trim())
+                .map(f => f.trim());
+
+            try {
+                updateSaveStatus('Saving...', 'info');
+
+                const response = await fetch(`${API_BASE_URL}/api/features`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        features: featuresArray
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSaveStatus(`Saved ${data.count} features`, 'success');
+                } else {
+                    updateSaveStatus('Save failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving features:', error);
+                updateSaveStatus('Save failed', 'error');
+            }
+        }
+
+        function autoSaveFeatures() {
+            clearTimeout(featureSaveTimer);
+            updateSaveStatus('Typing...', 'info');
+
+            featureSaveTimer = setTimeout(() => {
+                saveFeatures();
+            }, 1000);
+        }
+
+        function updateSaveStatus(message, type = 'info') {
+            const statusElement = document.getElementById('featureSaveStatus');
+            statusElement.textContent = message;
+
+            if (type === 'success') {
+                statusElement.style.color = '#10b981';
+            } else if (type === 'error') {
+                statusElement.style.color = '#f44336';
+            } else {
+                statusElement.style.color = '#6b6b6b';
+            }
+
+            if (type !== 'info') {
+                setTimeout(() => {
+                    statusElement.textContent = '';
+                }, 3000);
+            }
+        }
+
+        async function clearFeatures() {
+            if (confirm('Are you sure you want to clear all features?')) {
                 document.getElementById('features').value = '';
-                document.getElementById('results').classList.remove('show');
-                document.getElementById('exportBtn').disabled = true;
 
-                // Delete features from database
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/features`, {
+                    await fetch(`${API_BASE_URL}/api/features`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
                         }
                     });
-
-                    if (response.ok) {
-                        updateSaveStatus('All data cleared', 'success');
-                        debugLog('Features deleted from database', 'success');
-                    }
+                    updateSaveStatus('Features cleared', 'success');
                 } catch (error) {
-                    console.log('Could not delete from database (not configured)');
+                    console.log('Could not delete from database');
                 }
             }
         }
 
+        function clearTranscriptField() {
+            document.getElementById('transcript').value = '';
+            document.getElementById('results').style.display = 'none';
+        }
+
+        // Export
         function exportResults() {
+            if (!currentAnalysis) {
+                alert('No analysis to export');
+                return;
+            }
+
             const format = confirm('Click OK for CSV format, Cancel for Text format');
 
             if (format) {
-                exportCSV();
+                exportCSV(currentAnalysis);
             } else {
-                exportText();
+                exportText(currentAnalysis);
             }
         }
 
-        function exportCSV() {
-            let csv = 'Pain Point,Quote,Mapped Features,Frequency\n';
+        function exportCSV(analysis) {
+            let csv = 'Pain Point,Quote,Mapped Features\n';
 
-            analysisData.painPoints.forEach(pp => {
+            analysis.painPoints.forEach(pp => {
                 const features = pp.mappedFeatures.join('; ');
-                const featureFreqs = pp.mappedFeatures
-                    .map(f => `${f} (${analysisData.featureCounts[f]})`)
-                    .join('; ');
-
-                csv += `"${pp.painPoint}","${pp.quote}","${features}","${featureFreqs}"\n`;
-            });
-
-            csv += '\n\nFeature Priority Ranking\n';
-            csv += 'Feature,Pain Points Addressed\n';
-
-            const sortedFeatures = Object.entries(analysisData.featureCounts)
-                .sort((a, b) => b[1] - a[1]);
-
-            sortedFeatures.forEach(([feature, count]) => {
-                csv += `"${feature}",${count}\n`;
+                csv += `"${pp.painPoint}","${pp.quote}","${features}"\n`;
             });
 
             downloadFile(csv, 'interview-analysis.csv', 'text/csv');
         }
 
-        function exportText() {
+        function exportText(analysis) {
             let text = `INTERVIEW ANALYSIS REPORT\n`;
             text += `Generated: ${new Date().toLocaleString()}\n`;
-            text += `Transcripts Analyzed: ${analysisData.transcripts.length}\n`;
             text += `${'='.repeat(60)}\n\n`;
 
             text += `PAIN POINTS & FEATURE MAPPINGS\n`;
             text += `${'='.repeat(60)}\n\n`;
 
-            analysisData.painPoints.forEach((pp, index) => {
+            analysis.painPoints.forEach((pp, index) => {
                 text += `${index + 1}. ${pp.painPoint}\n`;
                 text += `   Quote: "${pp.quote}"\n`;
                 text += `   Mapped Features: ${pp.mappedFeatures.join(', ')}\n\n`;
-            });
-
-            text += `\n${'='.repeat(60)}\n`;
-            text += `FEATURE PRIORITY RANKING\n`;
-            text += `${'='.repeat(60)}\n\n`;
-
-            const sortedFeatures = Object.entries(analysisData.featureCounts)
-                .sort((a, b) => b[1] - a[1]);
-
-            sortedFeatures.forEach(([feature, count], index) => {
-                text += `${index + 1}. ${feature} - ${count} pain point${count > 1 ? 's' : ''}\n`;
             });
 
             downloadFile(text, 'interview-analysis.txt', 'text/plain');
@@ -995,72 +1058,24 @@
         }
 
         function showError(message) {
-            console.error('Error:', message);
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error';
+            errorDiv.innerHTML = `<strong>⚠️ Error:</strong><br>${message}`;
 
-            // Format multiline error messages with proper line breaks
-            const formattedMessage = message.replace(/\n/g, '<br>');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.parentNode.insertBefore(errorDiv, resultsDiv);
 
-            errorDiv.innerHTML = `
-                <strong>⚠️ Error:</strong><br>${formattedMessage}
-                <br><br><small>Click the <strong>🐛 Debug</strong> button in the bottom-right corner for detailed error information.</small>
-            `;
-            document.querySelector('.content').appendChild(errorDiv);
-
-            // Don't auto-remove CORS errors - they need more attention
-            if (!message.includes('CORS')) {
-                setTimeout(() => errorDiv.remove(), 12000);
-            }
+            setTimeout(() => errorDiv.remove(), 8000);
         }
 
-        // Debug Panel Functions
-        function toggleDebugPanel() {
-            const panel = document.getElementById('debugPanel');
-            panel.classList.toggle('show');
-        }
-
-        function clearDebugLog() {
-            const content = document.getElementById('debugContent');
-            content.innerHTML = '<div class="debug-entry"><div class="debug-timestamp">Cleared</div><div class="debug-message">Debug log cleared.</div></div>';
-            document.querySelector('.btn-debug').classList.remove('has-errors');
-        }
-
-        function debugLog(message, type = 'info') {
-            const content = document.getElementById('debugContent');
-            const entry = document.createElement('div');
-            entry.className = `debug-entry ${type}`;
-
-            const timestamp = new Date().toLocaleTimeString();
-            const messageStr = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
-
-            entry.innerHTML = `
-                <div class="debug-timestamp">[${timestamp}] ${type.toUpperCase()}</div>
-                <div class="debug-message">${messageStr}</div>
-            `;
-
-            content.appendChild(entry);
-            content.scrollTop = content.scrollHeight;
-
-            // If it's an error, pulse the debug button
-            if (type === 'error') {
-                document.querySelector('.btn-debug').classList.add('has-errors');
-            }
-
-            // Also log to console
-            console.log(`[DEBUG ${type}]`, message);
-        }
-
-        // Initialize page
+        // Initialize
         window.addEventListener('DOMContentLoaded', () => {
-            // Load saved features on page load
             loadSavedFeatures();
+            loadAnalysisHistory();
 
-            // Add event listener for auto-save
+            // Add auto-save for features
             const featuresTextarea = document.getElementById('features');
             featuresTextarea.addEventListener('input', autoSaveFeatures);
-
-            debugLog('Page initialized - feature persistence enabled', 'success');
         });
     </script>
 </body>
