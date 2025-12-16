@@ -306,49 +306,286 @@
             margin: 6px 0;
         }
 
-        .feature-priority {
-            background: #ffffff;
-            padding: 16px;
+        /* Features Table */
+        .features-table-container {
+            overflow-x: auto;
             border-radius: 8px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             border: 1px solid #e5e5e5;
         }
 
-        .feature-name {
-            font-weight: 500;
+        .features-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+        }
+
+        .features-table thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #e5e5e5;
+        }
+
+        .features-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 600;
+            color: #000000;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .features-table th:last-child {
+            width: 120px;
+            text-align: center;
+        }
+
+        .features-table tbody tr {
+            border-bottom: 1px solid #e5e5e5;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .features-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .features-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .features-table td {
+            padding: 14px 16px;
             color: #000000;
         }
 
-        .priority-badge {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .priority-count {
-            background: #000000;
-            color: #ffffff;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 13px;
+        .feature-title-cell {
             font-weight: 500;
         }
 
-        .priority-bar {
-            width: 100px;
-            height: 8px;
-            background: #e5e5e5;
-            border-radius: 4px;
-            overflow: hidden;
+        .pain-points-cell {
+            text-align: center;
+            font-weight: 500;
         }
 
-        .priority-fill {
-            height: 100%;
+        .pain-points-badge {
+            display: inline-block;
             background: #000000;
-            transition: width 0.3s;
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        /* Drawer */
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1000;
+            display: none;
+        }
+
+        .drawer.active {
+            display: block;
+        }
+
+        .drawer-overlay {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .drawer-content {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 500px;
+            max-width: 90vw;
+            background: #ffffff;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .drawer-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .drawer-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #000000;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+
+        .drawer-close:hover {
+            background: #f5f5f5;
+        }
+
+        .drawer-fixed-section {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .drawer-scrollable-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .drawer-field {
+            margin-bottom: 20px;
+        }
+
+        .drawer-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #000000;
+            font-size: 14px;
+        }
+
+        .drawer-input,
+        .drawer-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+
+        .drawer-input:focus,
+        .drawer-textarea:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .drawer-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .drawer-divider {
+            margin: 24px 0 20px;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .drawer-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #000000;
+        }
+
+        .transcript-group {
+            margin-bottom: 24px;
+        }
+
+        .transcript-group-title {
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 12px;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 14px;
+        }
+
+        .transcript-group-title:hover {
+            color: #333333;
+        }
+
+        .drawer-pain-point {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border: 1px solid #e5e5e5;
+            position: relative;
+        }
+
+        .drawer-pain-point-text {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #000000;
+            font-size: 14px;
+        }
+
+        .drawer-pain-point-quote {
+            color: #6b6b6b;
+            font-style: italic;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .drawer-delete-mapping {
+            background: #ff4444;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+
+        .drawer-delete-mapping:hover {
+            background: #cc0000;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .features-table th,
+            .features-table td {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .drawer-content {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .features-table th:last-child {
+                width: 80px;
+            }
+
+            .pain-points-badge {
+                padding: 3px 8px;
+                font-size: 12px;
+            }
         }
 
         .loading {
@@ -540,8 +777,20 @@
                 </div>
 
                 <div class="results-section">
-                    <h3>Feature Priority Ranking</h3>
-                    <div id="featurePriority"></div>
+                    <h3>Features</h3>
+                    <div class="features-table-container">
+                        <table id="featuresTable" class="features-table">
+                            <thead>
+                                <tr>
+                                    <th>Feature Title</th>
+                                    <th>Pain Points</th>
+                                </tr>
+                            </thead>
+                            <tbody id="featuresTableBody">
+                                <!-- Features will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="button-group">
@@ -595,6 +844,50 @@
 
             <h1 class="page-title">Transcript Details</h1>
             <div id="transcriptDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Feature Details Drawer -->
+    <div id="featureDrawer" class="drawer">
+        <div class="drawer-overlay" onclick="closeFeatureDrawer()"></div>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <button class="drawer-close" onclick="closeFeatureDrawer()">✕</button>
+            </div>
+
+            <div class="drawer-fixed-section">
+                <div class="drawer-field">
+                    <label for="drawerFeatureTitle">Feature Title</label>
+                    <input
+                        type="text"
+                        id="drawerFeatureTitle"
+                        class="drawer-input"
+                        placeholder="Enter feature title (5-10 words)"
+                        maxlength="100"
+                    />
+                </div>
+
+                <div class="drawer-field">
+                    <label for="drawerFeatureDescription">Description</label>
+                    <textarea
+                        id="drawerFeatureDescription"
+                        class="drawer-textarea"
+                        placeholder="Enter a brief description (a few sentences)"
+                        rows="4"
+                    ></textarea>
+                </div>
+
+                <button class="btn-primary" onclick="saveFeatureDetails()">
+                    Save Changes
+                </button>
+
+                <div class="drawer-divider"></div>
+                <h3 class="drawer-section-title">Pain Points</h3>
+            </div>
+
+            <div class="drawer-scrollable-section" id="drawerPainPoints">
+                <!-- Pain points grouped by transcript will be inserted here -->
+            </div>
         </div>
     </div>
 
@@ -852,13 +1145,13 @@
                 painPointsDiv.appendChild(ppDiv);
             });
 
-            // Display feature priority
-            displayFeaturePriority(analysis.painPoints);
+            // Display features table
+            displayFeaturesTable(analysis.painPoints);
         }
 
-        function displayFeaturePriority(painPoints) {
-            const priorityDiv = document.getElementById('featurePriority');
-            priorityDiv.innerHTML = '';
+        function displayFeaturesTable(painPoints) {
+            const tableBody = document.getElementById('featuresTableBody');
+            tableBody.innerHTML = '';
 
             // Count features
             const featureCounts = {};
@@ -868,33 +1161,192 @@
                 });
             });
 
-            // Sort by count
+            // Sort by count (descending)
             const sortedFeatures = Object.entries(featureCounts)
                 .sort((a, b) => b[1] - a[1]);
 
             if (sortedFeatures.length === 0) {
-                priorityDiv.innerHTML = '<p style="color: #6b6b6b;">No features mapped yet</p>';
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="2" style="text-align: center; color: #6b6b6b; padding: 20px;">No features mapped yet</td>';
+                tableBody.appendChild(row);
                 return;
             }
 
-            const maxCount = sortedFeatures[0][1];
-
             sortedFeatures.forEach(([feature, count]) => {
-                const percentage = (count / maxCount) * 100;
-
-                const featureDiv = document.createElement('div');
-                featureDiv.className = 'feature-priority';
-                featureDiv.innerHTML = `
-                    <div class="feature-name">${feature}</div>
-                    <div class="priority-badge">
-                        <div class="priority-count">${count} pain point${count > 1 ? 's' : ''}</div>
-                        <div class="priority-bar">
-                            <div class="priority-fill" style="width: ${percentage}%"></div>
-                        </div>
-                    </div>
+                const row = document.createElement('tr');
+                row.onclick = () => openFeatureDrawer(feature);
+                row.innerHTML = `
+                    <td class="feature-title-cell">${feature}</td>
+                    <td class="pain-points-cell">
+                        <span class="pain-points-badge">${count}</span>
+                    </td>
                 `;
-                priorityDiv.appendChild(featureDiv);
+                tableBody.appendChild(row);
             });
+        }
+
+        // Drawer functionality
+        let currentFeature = null;
+
+        async function openFeatureDrawer(featureName) {
+            currentFeature = featureName;
+            const drawer = document.getElementById('featureDrawer');
+            drawer.classList.add('active');
+
+            // Show loading state
+            document.getElementById('drawerFeatureTitle').value = featureName;
+            document.getElementById('drawerFeatureDescription').value = 'Loading...';
+            document.getElementById('drawerPainPoints').innerHTML = '<p style="color: #6b6b6b;">Loading pain points...</p>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/features/details/${encodeURIComponent(featureName)}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load feature details');
+                }
+
+                const data = await response.json();
+                if (data.success && data.feature) {
+                    // Populate fields
+                    document.getElementById('drawerFeatureTitle').value = data.feature.feature_name;
+                    document.getElementById('drawerFeatureDescription').value = data.feature.description || '';
+
+                    // Populate pain points grouped by transcript
+                    displayDrawerPainPoints(data.feature.transcripts);
+                }
+            } catch (error) {
+                console.error('Error loading feature details:', error);
+                document.getElementById('drawerPainPoints').innerHTML = '<p style="color: #ff4444;">Failed to load pain points</p>';
+            }
+        }
+
+        function closeFeatureDrawer() {
+            const drawer = document.getElementById('featureDrawer');
+            drawer.classList.remove('active');
+            currentFeature = null;
+        }
+
+        function displayDrawerPainPoints(transcripts) {
+            const container = document.getElementById('drawerPainPoints');
+
+            if (!transcripts || transcripts.length === 0) {
+                container.innerHTML = '<p style="color: #6b6b6b;">No pain points linked to this feature yet</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            transcripts.forEach(transcript => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'transcript-group';
+
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'transcript-group-title';
+                titleDiv.textContent = transcript.transcriptName;
+                titleDiv.onclick = () => viewTranscript(transcript.transcriptId);
+                groupDiv.appendChild(titleDiv);
+
+                transcript.painPoints.forEach(painPoint => {
+                    const ppDiv = document.createElement('div');
+                    ppDiv.className = 'drawer-pain-point';
+                    ppDiv.innerHTML = `
+                        <div class="drawer-pain-point-text">${painPoint.painPoint}</div>
+                        <div class="drawer-pain-point-quote">"${painPoint.quote}"</div>
+                        <button class="drawer-delete-mapping" onclick="deleteFeatureMapping(${painPoint.mappingId}, '${transcript.transcriptName}')">
+                            Remove
+                        </button>
+                    `;
+                    groupDiv.appendChild(ppDiv);
+                });
+
+                container.appendChild(groupDiv);
+            });
+        }
+
+        async function saveFeatureDetails() {
+            const featureName = document.getElementById('drawerFeatureTitle').value.trim();
+            const description = document.getElementById('drawerFeatureDescription').value.trim();
+
+            if (!featureName) {
+                alert('Feature title is required');
+                return;
+            }
+
+            if (!currentFeature) {
+                alert('No feature selected');
+                return;
+            }
+
+            try {
+                // Get the feature ID from the current feature
+                const featuresResponse = await fetch(`${API_BASE_URL}/api/features`);
+                const featuresData = await featuresResponse.json();
+                const feature = featuresData.features.find(f => f.feature_name === currentFeature);
+
+                if (!feature) {
+                    throw new Error('Feature not found');
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/features/${feature.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        featureName,
+                        description
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update feature');
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    // Update current feature name if changed
+                    currentFeature = featureName;
+
+                    // Reload the current analysis to reflect changes
+                    if (currentAnalysis && currentAnalysis.painPoints) {
+                        displayFeaturesTable(currentAnalysis.painPoints);
+                    }
+
+                    alert('Feature updated successfully');
+                }
+            } catch (error) {
+                console.error('Error saving feature:', error);
+                alert('Failed to save feature details');
+            }
+        }
+
+        async function deleteFeatureMapping(mappingId, transcriptName) {
+            if (!confirm(`Remove this pain point from the feature?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/features/mappings/${mappingId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete mapping');
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    // Reload the drawer
+                    await openFeatureDrawer(currentFeature);
+
+                    // Reload the features table
+                    if (currentAnalysis && currentAnalysis.painPoints) {
+                        displayFeaturesTable(currentAnalysis.painPoints);
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting mapping:', error);
+                alert('Failed to remove pain point');
+            }
         }
 
         // Features management
@@ -904,7 +1356,9 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.features.length > 0) {
-                        document.getElementById('features').value = data.features.join('\n');
+                        // Extract feature names from feature objects
+                        const featureNames = data.features.map(f => f.feature_name || f);
+                        document.getElementById('features').value = featureNames.join('\n');
                         updateSaveStatus(`Loaded ${data.features.length} saved features`, 'success');
                     }
                 }
