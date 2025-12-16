@@ -3,9 +3,27 @@ const pool = require('./pool');
 /**
  * Get all features for a user
  * @param {string} userId - User identifier (default: 'default')
- * @returns {Promise<Array>} Array of feature names
+ * @returns {Promise<Array>} Array of feature objects
  */
 async function getFeatures(userId = 'default') {
+  try {
+    const result = await pool.query(
+      'SELECT id, feature_name, description, created_at, updated_at FROM features WHERE user_id = $1 ORDER BY id ASC',
+      [userId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting features:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get feature names only for a user (for backwards compatibility)
+ * @param {string} userId - User identifier (default: 'default')
+ * @returns {Promise<Array>} Array of feature names
+ */
+async function getFeatureNames(userId = 'default') {
   try {
     const result = await pool.query(
       'SELECT feature_name FROM features WHERE user_id = $1 ORDER BY id ASC',
@@ -13,7 +31,7 @@ async function getFeatures(userId = 'default') {
     );
     return result.rows.map(row => row.feature_name);
   } catch (error) {
-    console.error('Error getting features:', error);
+    console.error('Error getting feature names:', error);
     throw error;
   }
 }
@@ -75,8 +93,144 @@ async function deleteFeatures(userId = 'default') {
   }
 }
 
+/**
+ * Get a single feature with its pain points grouped by transcript
+ * @param {string} featureName - Feature name
+ * @param {string} userId - User identifier
+ * @returns {Promise<Object>} Feature with pain points
+ */
+async function getFeatureDetails(featureName, userId = 'default') {
+  try {
+    // Get feature details
+    const featureResult = await pool.query(
+      'SELECT id, feature_name, description FROM features WHERE feature_name = $1 AND user_id = $2',
+      [featureName, userId]
+    );
+
+    if (featureResult.rows.length === 0) {
+      return null;
+    }
+
+    const feature = featureResult.rows[0];
+
+    // Get pain points with transcript info
+    const painPointsResult = await pool.query(`
+      SELECT
+        pp.id as pain_point_id,
+        pp.pain_point,
+        pp.quote,
+        t.id as transcript_id,
+        t.summary as transcript_name,
+        fm.id as mapping_id
+      FROM feature_mappings fm
+      JOIN pain_points pp ON fm.pain_point_id = pp.id
+      JOIN transcripts t ON pp.transcript_id = t.id
+      WHERE fm.feature_name = $1 AND t.user_id = $2
+      ORDER BY t.created_at DESC, pp.id ASC
+    `, [featureName, userId]);
+
+    // Group pain points by transcript
+    const transcriptMap = {};
+    painPointsResult.rows.forEach(row => {
+      if (!transcriptMap[row.transcript_id]) {
+        transcriptMap[row.transcript_id] = {
+          transcriptId: row.transcript_id,
+          transcriptName: row.transcript_name || `Transcript #${row.transcript_id}`,
+          painPoints: []
+        };
+      }
+      transcriptMap[row.transcript_id].painPoints.push({
+        painPointId: row.pain_point_id,
+        painPoint: row.pain_point,
+        quote: row.quote,
+        mappingId: row.mapping_id
+      });
+    });
+
+    return {
+      ...feature,
+      transcripts: Object.values(transcriptMap)
+    };
+  } catch (error) {
+    console.error('Error getting feature details:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a feature's title and description
+ * @param {number} featureId - Feature ID
+ * @param {string} featureName - New feature name
+ * @param {string} description - New description
+ * @param {string} userId - User identifier
+ * @returns {Promise<Object>} Updated feature
+ */
+async function updateFeature(featureId, featureName, description, userId = 'default') {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Get old feature name
+    const oldFeatureResult = await client.query(
+      'SELECT feature_name FROM features WHERE id = $1 AND user_id = $2',
+      [featureId, userId]
+    );
+
+    if (oldFeatureResult.rows.length === 0) {
+      throw new Error('Feature not found');
+    }
+
+    const oldFeatureName = oldFeatureResult.rows[0].feature_name;
+
+    // Update the feature
+    const result = await client.query(
+      'UPDATE features SET feature_name = $1, description = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *',
+      [featureName, description, featureId, userId]
+    );
+
+    // Update feature_mappings to reference the new feature name
+    if (oldFeatureName !== featureName) {
+      await client.query(
+        'UPDATE feature_mappings SET feature_name = $1 WHERE feature_name = $2',
+        [featureName, oldFeatureName]
+      );
+    }
+
+    await client.query('COMMIT');
+    return result.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating feature:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Delete a feature mapping (pain point to feature connection)
+ * @param {number} mappingId - Mapping ID
+ * @returns {Promise<boolean>} Success
+ */
+async function deleteFeatureMapping(mappingId) {
+  try {
+    const result = await pool.query(
+      'DELETE FROM feature_mappings WHERE id = $1',
+      [mappingId]
+    );
+    return result.rowCount > 0;
+  } catch (error) {
+    console.error('Error deleting feature mapping:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getFeatures,
+  getFeatureNames,
   saveFeatures,
-  deleteFeatures
+  deleteFeatures,
+  getFeatureDetails,
+  updateFeature,
+  deleteFeatureMapping
 };

@@ -10,9 +10,16 @@ async function initDatabase() {
         id SERIAL PRIMARY KEY,
         user_id TEXT NOT NULL DEFAULT 'default',
         feature_name TEXT NOT NULL,
+        description TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
+    `);
+
+    // Add description column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE features
+      ADD COLUMN IF NOT EXISTS description TEXT
     `);
 
     // Create index for faster queries
