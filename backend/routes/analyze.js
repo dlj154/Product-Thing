@@ -60,20 +60,27 @@ Please analyze this transcript and provide:
 1. Extract all pain points mentioned by the customer (problems, frustrations, difficulties, needs)
 2. For each pain point, provide a direct quote from the transcript that demonstrates it
 3. Map each pain point to one or more relevant features from the feature list
-4. Rank the features by how many pain points they address
+4. Group the results by feature, with each feature having:
+   - An AI-generated summary that synthesizes all the pain points mapped to that feature
+   - All the quotes associated with those pain points
 
 Return your analysis in the following JSON format:
 {
-  "painPoints": [
+  "features": [
     {
-      "painPoint": "Description of the pain point",
-      "quote": "Exact quote from transcript",
-      "mappedFeatures": ["Feature 1", "Feature 2"]
+      "featureName": "Feature name from the feature list",
+      "aiSummary": "A concise summary (1-2 sentences) synthesizing all pain points for this feature",
+      "quotes": [
+        {
+          "quote": "Exact quote from transcript",
+          "painPoint": "Description of the pain point this quote represents"
+        }
+      ]
     }
   ]
 }
 
-Be thorough and extract all pain points, even subtle ones. Make sure quotes are exact excerpts from the transcript.`;
+Be thorough and extract all pain points, even subtle ones. Make sure quotes are exact excerpts from the transcript. Each feature should appear only once, with all relevant quotes grouped under it.`;
 
     // Call Claude API
     const message = await anthropic.messages.create({
@@ -101,21 +108,24 @@ Be thorough and extract all pain points, even subtle ones. Make sure quotes are 
     const analysis = JSON.parse(jsonMatch[0]);
 
     // Validate analysis structure
-    if (!analysis.painPoints || !Array.isArray(analysis.painPoints)) {
+    if (!analysis.features || !Array.isArray(analysis.features)) {
       return res.status(500).json({
         error: 'Analysis failed',
         message: 'Invalid analysis structure received'
       });
     }
 
-    console.log(`Successfully analyzed: found ${analysis.painPoints.length} pain points`);
+    // Count total quotes across all features
+    const totalQuotes = analysis.features.reduce((sum, feature) => sum + (feature.quotes?.length || 0), 0);
+    console.log(`Successfully analyzed: found ${analysis.features.length} features with ${totalQuotes} total quotes`);
 
     res.json({
       success: true,
       analysis,
       metadata: {
         transcriptLength: transcript.length,
-        painPointsFound: analysis.painPoints.length,
+        featuresFound: analysis.features.length,
+        quotesFound: totalQuotes,
         timestamp: new Date().toISOString()
       }
     });

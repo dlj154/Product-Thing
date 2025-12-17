@@ -994,21 +994,24 @@
                     <h3>Pain Points & Feature Mappings</h3>
             `;
 
-            transcript.painPoints.forEach((pp, index) => {
-                const featuresHTML = pp.mappedFeatures.length > 0
-                    ? `<ul class="features-list">
-                        ${pp.mappedFeatures.map(f => `<li>${f}</li>`).join('')}
-                       </ul>`
-                    : '<p style="color: #6b6b6b;">No features mapped</p>';
+            transcript.features.forEach((feature, index) => {
+                const quotesHTML = feature.quotes.map((quoteObj, quoteIndex) =>
+                    `<div class="quote">${quoteIndex + 1}. "${quoteObj.quote}"</div>`
+                ).join('');
 
                 html += `
                     <div class="pain-point">
-                        <div class="pain-point-text">${index + 1}. ${pp.painPoint}</div>
-                        <div class="quote">"${pp.quote}"</div>
+                        <div class="pain-point-text">${index + 1}. ${feature.featureName}</div>
                         <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
-                            Mapped Features:
+                            AI Summary:
                         </div>
-                        ${featuresHTML}
+                        <div style="margin: 8px 0; color: #333333; font-style: italic;">
+                            ${feature.aiSummary}
+                        </div>
+                        <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
+                            Quotes:
+                        </div>
+                        ${quotesHTML}
                     </div>
                 `;
             });
@@ -1053,7 +1056,7 @@
                 const summary = transcript.substring(0, 60) + (transcript.length > 60 ? '...' : '');
 
                 // Save to database
-                await saveTranscriptToDatabase(transcript, summary, analysis.painPoints);
+                await saveTranscriptToDatabase(transcript, summary, analysis.features);
 
                 // Display results
                 currentAnalysis = analysis;
@@ -1101,7 +1104,7 @@
             return data.analysis;
         }
 
-        async function saveTranscriptToDatabase(transcriptText, summary, painPoints) {
+        async function saveTranscriptToDatabase(transcriptText, summary, features) {
             try {
                 await fetch(`${API_BASE_URL}/api/transcripts`, {
                     method: 'POST',
@@ -1111,7 +1114,7 @@
                     body: JSON.stringify({
                         transcriptText,
                         summary,
-                        painPoints
+                        features
                     })
                 });
             } catch (error) {
@@ -1123,29 +1126,33 @@
             const resultsDiv = document.getElementById('results');
             resultsDiv.style.display = 'block';
 
-            // Display pain points
+            // Display features with summaries and quotes
             const painPointsDiv = document.getElementById('painPoints');
             painPointsDiv.innerHTML = '';
 
-            analysis.painPoints.forEach((pp, index) => {
-                const ppDiv = document.createElement('div');
-                ppDiv.className = 'pain-point';
+            analysis.features.forEach((feature, index) => {
+                const featureDiv = document.createElement('div');
+                featureDiv.className = 'pain-point';
 
-                const featuresHTML = pp.mappedFeatures.length > 0
-                    ? `<ul class="features-list">
-                        ${pp.mappedFeatures.map(f => `<li>${f}</li>`).join('')}
-                       </ul>`
-                    : '<p style="color: #6b6b6b;">No features mapped</p>';
+                // Build quotes HTML
+                const quotesHTML = feature.quotes.map((quoteObj, quoteIndex) =>
+                    `<div class="quote">${quoteIndex + 1}. "${quoteObj.quote}"</div>`
+                ).join('');
 
-                ppDiv.innerHTML = `
-                    <div class="pain-point-text">${index + 1}. ${pp.painPoint}</div>
-                    <div class="quote">"${pp.quote}"</div>
+                featureDiv.innerHTML = `
+                    <div class="pain-point-text">${index + 1}. ${feature.featureName}</div>
                     <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
-                        Mapped Features:
+                        AI Summary:
                     </div>
-                    ${featuresHTML}
+                    <div style="margin: 8px 0; color: #333333; font-style: italic;">
+                        ${feature.aiSummary}
+                    </div>
+                    <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
+                        Quotes:
+                    </div>
+                    ${quotesHTML}
                 `;
-                painPointsDiv.appendChild(ppDiv);
+                painPointsDiv.appendChild(featureDiv);
             });
         }
 
@@ -1445,11 +1452,12 @@
         }
 
         function exportCSV(analysis) {
-            let csv = 'Pain Point,Quote,Mapped Features\n';
+            let csv = 'Feature Name,AI Summary,Quote\n';
 
-            analysis.painPoints.forEach(pp => {
-                const features = pp.mappedFeatures.join('; ');
-                csv += `"${pp.painPoint}","${pp.quote}","${features}"\n`;
+            analysis.features.forEach(feature => {
+                feature.quotes.forEach(quoteObj => {
+                    csv += `"${feature.featureName}","${feature.aiSummary}","${quoteObj.quote}"\n`;
+                });
             });
 
             downloadFile(csv, 'interview-analysis.csv', 'text/csv');
@@ -1463,10 +1471,13 @@
             text += `PAIN POINTS & FEATURE MAPPINGS\n`;
             text += `${'='.repeat(60)}\n\n`;
 
-            analysis.painPoints.forEach((pp, index) => {
-                text += `${index + 1}. ${pp.painPoint}\n`;
-                text += `   Quote: "${pp.quote}"\n`;
-                text += `   Mapped Features: ${pp.mappedFeatures.join(', ')}\n\n`;
+            analysis.features.forEach((feature, index) => {
+                text += `${index + 1}. ${feature.featureName}\n`;
+                text += `   AI Summary: ${feature.aiSummary}\n\n`;
+                feature.quotes.forEach((quoteObj, quoteIndex) => {
+                    text += `   Quote ${quoteIndex + 1}: "${quoteObj.quote}"\n`;
+                });
+                text += `\n`;
             });
 
             downloadFile(text, 'interview-analysis.txt', 'text/plain');
