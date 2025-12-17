@@ -1020,6 +1020,18 @@
                     if (transcriptDetailPage && transcriptDetailPage.classList.contains('active')) {
                         navigateTo('analyze');
                     }
+
+                    // Refresh Features page if it's active (to update pain point counts)
+                    const featuresPage = document.getElementById('page-features');
+                    if (featuresPage && featuresPage.classList.contains('active')) {
+                        await loadFeaturesPage();
+                    }
+
+                    // Refresh feature drawer if it's open (to update pain points for that feature)
+                    const featureDrawer = document.getElementById('featureDrawer');
+                    if (featureDrawer && featureDrawer.classList.contains('active') && currentFeature) {
+                        await openFeatureDrawer(currentFeature);
+                    }
                 } else {
                     alert('Failed to delete transcript. Please try again.');
                 }
