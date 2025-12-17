@@ -239,9 +239,10 @@ async function getAllFeaturesWithCounts(userId = 'default') {
         f.description,
         f.created_at,
         f.updated_at,
-        COUNT(DISTINCT fm.id) as pain_point_count
+        COUNT(DISTINCT pp.transcript_id) as pain_point_count
       FROM features f
       LEFT JOIN feature_mappings fm ON f.feature_name = fm.feature_name
+      LEFT JOIN pain_points pp ON fm.pain_point_id = pp.id
       WHERE f.user_id = $1
       GROUP BY f.id, f.feature_name, f.description, f.created_at, f.updated_at
       ORDER BY pain_point_count DESC, f.id ASC
