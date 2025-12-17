@@ -1,9 +1,9 @@
 const pool = require('./pool');
 
 /**
- * Save a transcript with its pain points and feature mappings
+ * Save a transcript with its feature mappings and summaries
  */
-async function saveTranscript(userId, transcriptText, summary, painPoints) {
+async function saveTranscript(userId, transcriptText, summary, features) {
   const client = await pool.connect();
 
   try {
@@ -16,19 +16,26 @@ async function saveTranscript(userId, transcriptText, summary, painPoints) {
     );
     const transcriptId = transcriptResult.rows[0].id;
 
-    // Insert pain points and feature mappings
-    for (const pp of painPoints) {
-      const painPointResult = await client.query(
-        'INSERT INTO pain_points (transcript_id, pain_point, quote) VALUES ($1, $2, $3) RETURNING id',
-        [transcriptId, pp.painPoint, pp.quote]
+    // Insert features, their summaries, pain points, and mappings
+    for (const feature of features) {
+      // Insert the AI summary for this feature
+      await client.query(
+        'INSERT INTO transcript_feature_summaries (transcript_id, feature_name, ai_summary) VALUES ($1, $2, $3)',
+        [transcriptId, feature.featureName, feature.aiSummary]
       );
-      const painPointId = painPointResult.rows[0].id;
 
-      // Insert feature mappings
-      for (const feature of pp.mappedFeatures) {
+      // Insert pain points and feature mappings for each quote
+      for (const quoteObj of feature.quotes) {
+        const painPointResult = await client.query(
+          'INSERT INTO pain_points (transcript_id, pain_point, quote) VALUES ($1, $2, $3) RETURNING id',
+          [transcriptId, quoteObj.painPoint, quoteObj.quote]
+        );
+        const painPointId = painPointResult.rows[0].id;
+
+        // Insert feature mapping
         await client.query(
           'INSERT INTO feature_mappings (pain_point_id, feature_name) VALUES ($1, $2)',
-          [painPointId, feature]
+          [painPointId, feature.featureName]
         );
       }
     }
@@ -58,7 +65,7 @@ async function getTranscripts(userId = 'default') {
 }
 
 /**
- * Get a single transcript with all its pain points and feature mappings
+ * Get a single transcript with all its features, summaries, and quotes
  */
 async function getTranscriptById(transcriptId) {
   const client = await pool.connect();
@@ -76,34 +83,49 @@ async function getTranscriptById(transcriptId) {
 
     const transcript = transcriptResult.rows[0];
 
-    // Get pain points
-    const painPointsResult = await client.query(
-      'SELECT id, pain_point, quote FROM pain_points WHERE transcript_id = $1',
+    // Get feature summaries for this transcript
+    const summariesResult = await client.query(
+      'SELECT feature_name, ai_summary FROM transcript_feature_summaries WHERE transcript_id = $1',
       [transcriptId]
     );
 
-    // Get feature mappings for each pain point
-    const painPoints = await Promise.all(
-      painPointsResult.rows.map(async (pp) => {
-        const mappingsResult = await client.query(
-          'SELECT feature_name FROM feature_mappings WHERE pain_point_id = $1',
-          [pp.id]
-        );
+    // Build a map of feature_name to ai_summary
+    const summariesMap = {};
+    summariesResult.rows.forEach(row => {
+      summariesMap[row.feature_name] = row.ai_summary;
+    });
 
-        return {
-          painPoint: pp.pain_point,
-          quote: pp.quote,
-          mappedFeatures: mappingsResult.rows.map(r => r.feature_name)
+    // Get pain points with their feature mappings
+    const painPointsResult = await client.query(`
+      SELECT pp.id, pp.pain_point, pp.quote, fm.feature_name
+      FROM pain_points pp
+      JOIN feature_mappings fm ON pp.id = fm.pain_point_id
+      WHERE pp.transcript_id = $1
+      ORDER BY fm.feature_name, pp.id
+    `, [transcriptId]);
+
+    // Group quotes by feature
+    const featuresMap = {};
+    painPointsResult.rows.forEach(row => {
+      if (!featuresMap[row.feature_name]) {
+        featuresMap[row.feature_name] = {
+          featureName: row.feature_name,
+          aiSummary: summariesMap[row.feature_name] || '',
+          quotes: []
         };
-      })
-    );
+      }
+      featuresMap[row.feature_name].quotes.push({
+        quote: row.quote,
+        painPoint: row.pain_point
+      });
+    });
 
     return {
       id: transcript.id,
       transcriptText: transcript.transcript_text,
       summary: transcript.summary,
       createdAt: transcript.created_at,
-      painPoints
+      features: Object.values(featuresMap)
     };
   } finally {
     client.release();

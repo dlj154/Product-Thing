@@ -78,6 +78,23 @@ async function initDatabase() {
       ON feature_mappings(pain_point_id)
     `);
 
+    // Create transcript_feature_summaries table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS transcript_feature_summaries (
+        id SERIAL PRIMARY KEY,
+        transcript_id INTEGER REFERENCES transcripts(id) ON DELETE CASCADE,
+        feature_name TEXT NOT NULL,
+        ai_summary TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Create index for transcript_feature_summaries
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_transcript_feature_summaries_transcript_id
+      ON transcript_feature_summaries(transcript_id)
+    `);
+
     console.log('✓ Database schema initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);

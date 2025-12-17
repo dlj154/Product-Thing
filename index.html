@@ -103,6 +103,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            position: relative;
         }
 
         .history-item:hover {
@@ -111,6 +112,11 @@
 
         .history-item.active {
             background: #e5e5e5;
+        }
+
+        .history-item-content {
+            flex: 1;
+            min-width: 0;
         }
 
         .history-item-summary {
@@ -123,6 +129,31 @@
         .history-item-date {
             font-size: 11px;
             color: #6b6b6b;
+        }
+
+        .history-item-delete {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #6b6b6b;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: all 0.15s;
+            line-height: 1;
+        }
+
+        .history-item:hover .history-item-delete {
+            opacity: 1;
+        }
+
+        .history-item-delete:hover {
+            background: #ff4444;
+            color: #ffffff;
         }
 
         /* Main Content */
@@ -956,12 +987,58 @@
                 const date = new Date(transcript.created_at).toLocaleDateString();
 
                 item.innerHTML = `
-                    <div class="history-item-summary">${summary}</div>
-                    <div class="history-item-date">${date}</div>
+                    <div class="history-item-content">
+                        <div class="history-item-summary">${summary}</div>
+                        <div class="history-item-date">${date}</div>
+                    </div>
+                    <button class="history-item-delete" onclick="deleteTranscriptFromHistory(${transcript.id}, event)" title="Delete transcript">×</button>
                 `;
 
                 historyList.appendChild(item);
             });
+        }
+
+        async function deleteTranscriptFromHistory(transcriptId, event) {
+            // Stop the event from bubbling up to the history item click
+            event.stopPropagation();
+
+            if (!confirm('Are you sure you want to delete this transcript? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts/${transcriptId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Reload the history list
+                    await loadAnalysisHistory();
+
+                    // If we're currently viewing this transcript, go back to analyze page
+                    const transcriptDetailPage = document.getElementById('page-transcript-detail');
+                    if (transcriptDetailPage && transcriptDetailPage.classList.contains('active')) {
+                        navigateTo('analyze');
+                    }
+
+                    // Refresh Features page if it's active (to update pain point counts)
+                    const featuresPage = document.getElementById('page-features');
+                    if (featuresPage && featuresPage.classList.contains('active')) {
+                        await loadFeaturesPage();
+                    }
+
+                    // Refresh feature drawer if it's open (to update pain points for that feature)
+                    const featureDrawer = document.getElementById('featureDrawer');
+                    if (featureDrawer && featureDrawer.classList.contains('active') && currentFeature) {
+                        await openFeatureDrawer(currentFeature);
+                    }
+                } else {
+                    alert('Failed to delete transcript. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error deleting transcript:', error);
+                alert('Failed to delete transcript. Please try again.');
+            }
         }
 
         async function viewTranscript(transcriptId) {
@@ -994,21 +1071,24 @@
                     <h3>Pain Points & Feature Mappings</h3>
             `;
 
-            transcript.painPoints.forEach((pp, index) => {
-                const featuresHTML = pp.mappedFeatures.length > 0
-                    ? `<ul class="features-list">
-                        ${pp.mappedFeatures.map(f => `<li>${f}</li>`).join('')}
-                       </ul>`
-                    : '<p style="color: #6b6b6b;">No features mapped</p>';
+            transcript.features.forEach((feature, index) => {
+                const quotesHTML = feature.quotes.map((quoteObj, quoteIndex) =>
+                    `<div class="quote">${quoteIndex + 1}. "${quoteObj.quote}"</div>`
+                ).join('');
 
                 html += `
                     <div class="pain-point">
-                        <div class="pain-point-text">${index + 1}. ${pp.painPoint}</div>
-                        <div class="quote">"${pp.quote}"</div>
+                        <div class="pain-point-text">${index + 1}. ${feature.featureName}</div>
                         <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
-                            Mapped Features:
+                            AI Summary:
                         </div>
-                        ${featuresHTML}
+                        <div style="margin: 8px 0; color: #333333; font-style: italic;">
+                            ${feature.aiSummary}
+                        </div>
+                        <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
+                            Quotes:
+                        </div>
+                        ${quotesHTML}
                     </div>
                 `;
             });
@@ -1053,7 +1133,7 @@
                 const summary = transcript.substring(0, 60) + (transcript.length > 60 ? '...' : '');
 
                 // Save to database
-                await saveTranscriptToDatabase(transcript, summary, analysis.painPoints);
+                await saveTranscriptToDatabase(transcript, summary, analysis.features);
 
                 // Display results
                 currentAnalysis = analysis;
@@ -1101,7 +1181,7 @@
             return data.analysis;
         }
 
-        async function saveTranscriptToDatabase(transcriptText, summary, painPoints) {
+        async function saveTranscriptToDatabase(transcriptText, summary, features) {
             try {
                 await fetch(`${API_BASE_URL}/api/transcripts`, {
                     method: 'POST',
@@ -1111,7 +1191,7 @@
                     body: JSON.stringify({
                         transcriptText,
                         summary,
-                        painPoints
+                        features
                     })
                 });
             } catch (error) {
@@ -1123,29 +1203,33 @@
             const resultsDiv = document.getElementById('results');
             resultsDiv.style.display = 'block';
 
-            // Display pain points
+            // Display features with summaries and quotes
             const painPointsDiv = document.getElementById('painPoints');
             painPointsDiv.innerHTML = '';
 
-            analysis.painPoints.forEach((pp, index) => {
-                const ppDiv = document.createElement('div');
-                ppDiv.className = 'pain-point';
+            analysis.features.forEach((feature, index) => {
+                const featureDiv = document.createElement('div');
+                featureDiv.className = 'pain-point';
 
-                const featuresHTML = pp.mappedFeatures.length > 0
-                    ? `<ul class="features-list">
-                        ${pp.mappedFeatures.map(f => `<li>${f}</li>`).join('')}
-                       </ul>`
-                    : '<p style="color: #6b6b6b;">No features mapped</p>';
+                // Build quotes HTML
+                const quotesHTML = feature.quotes.map((quoteObj, quoteIndex) =>
+                    `<div class="quote">${quoteIndex + 1}. "${quoteObj.quote}"</div>`
+                ).join('');
 
-                ppDiv.innerHTML = `
-                    <div class="pain-point-text">${index + 1}. ${pp.painPoint}</div>
-                    <div class="quote">"${pp.quote}"</div>
+                featureDiv.innerHTML = `
+                    <div class="pain-point-text">${index + 1}. ${feature.featureName}</div>
                     <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
-                        Mapped Features:
+                        AI Summary:
                     </div>
-                    ${featuresHTML}
+                    <div style="margin: 8px 0; color: #333333; font-style: italic;">
+                        ${feature.aiSummary}
+                    </div>
+                    <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
+                        Quotes:
+                    </div>
+                    ${quotesHTML}
                 `;
-                painPointsDiv.appendChild(ppDiv);
+                painPointsDiv.appendChild(featureDiv);
             });
         }
 
@@ -1445,11 +1529,12 @@
         }
 
         function exportCSV(analysis) {
-            let csv = 'Pain Point,Quote,Mapped Features\n';
+            let csv = 'Feature Name,AI Summary,Quote\n';
 
-            analysis.painPoints.forEach(pp => {
-                const features = pp.mappedFeatures.join('; ');
-                csv += `"${pp.painPoint}","${pp.quote}","${features}"\n`;
+            analysis.features.forEach(feature => {
+                feature.quotes.forEach(quoteObj => {
+                    csv += `"${feature.featureName}","${feature.aiSummary}","${quoteObj.quote}"\n`;
+                });
             });
 
             downloadFile(csv, 'interview-analysis.csv', 'text/csv');
@@ -1463,10 +1548,13 @@
             text += `PAIN POINTS & FEATURE MAPPINGS\n`;
             text += `${'='.repeat(60)}\n\n`;
 
-            analysis.painPoints.forEach((pp, index) => {
-                text += `${index + 1}. ${pp.painPoint}\n`;
-                text += `   Quote: "${pp.quote}"\n`;
-                text += `   Mapped Features: ${pp.mappedFeatures.join(', ')}\n\n`;
+            analysis.features.forEach((feature, index) => {
+                text += `${index + 1}. ${feature.featureName}\n`;
+                text += `   AI Summary: ${feature.aiSummary}\n\n`;
+                feature.quotes.forEach((quoteObj, quoteIndex) => {
+                    text += `   Quote ${quoteIndex + 1}: "${quoteObj.quote}"\n`;
+                });
+                text += `\n`;
             });
 
             downloadFile(text, 'interview-analysis.txt', 'text/plain');

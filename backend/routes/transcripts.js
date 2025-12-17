@@ -64,17 +64,17 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { transcriptText, summary, painPoints } = req.body;
+    const { transcriptText, summary, features } = req.body;
     const userId = req.body.userId || 'default';
 
-    if (!transcriptText || !painPoints) {
+    if (!transcriptText || !features) {
       return res.status(400).json({
         success: false,
-        error: 'transcriptText and painPoints are required'
+        error: 'transcriptText and features are required'
       });
     }
 
-    const transcriptId = await saveTranscript(userId, transcriptText, summary, painPoints);
+    const transcriptId = await saveTranscript(userId, transcriptText, summary, features);
 
     res.json({
       success: true,
