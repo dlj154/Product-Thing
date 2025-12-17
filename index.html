@@ -776,23 +776,6 @@
                     <div id="painPoints"></div>
                 </div>
 
-                <div class="results-section">
-                    <h3>Features</h3>
-                    <div class="features-table-container">
-                        <table id="featuresTable" class="features-table">
-                            <thead>
-                                <tr>
-                                    <th>Feature Title</th>
-                                    <th>Pain Points</th>
-                                </tr>
-                            </thead>
-                            <tbody id="featuresTableBody">
-                                <!-- Features will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
                 <div class="button-group">
                     <button class="btn-primary" onclick="exportResults()">
                         Export Results
@@ -804,24 +787,32 @@
         <!-- Features Page -->
         <div class="page" id="page-features">
             <h1 class="page-title">Features</h1>
-            <p class="page-subtitle">Manage your predefined feature list</p>
+            <p class="page-subtitle">View and manage your features</p>
 
             <div class="section">
-                <div class="section-title">Feature List</div>
-                <textarea id="features" rows="12" placeholder="List your predefined features (one per line)..."></textarea>
-                <div class="helper-text">
-                    Example: Email notifications, Dashboard analytics, Mobile app
-                    <span id="featureSaveStatus" class="save-status"></span>
+                <div class="section-title">Add New Feature</div>
+                <div style="display: flex; gap: 12px; align-items: flex-start;">
+                    <textarea id="newFeatureInput" rows="3" placeholder="Enter feature names (one per line)..." style="flex: 1;"></textarea>
+                    <button class="btn-primary" onclick="addNewFeatures()" style="margin: 0;">Add Features</button>
                 </div>
+                <div class="helper-text">Add new features to track in your analysis</div>
             </div>
 
-            <div class="button-group">
-                <button class="btn-primary" onclick="saveFeatures()">
-                    Save Features
-                </button>
-                <button onclick="clearFeatures()">
-                    Clear All
-                </button>
+            <div class="results-section">
+                <h3>All Features</h3>
+                <div class="features-table-container">
+                    <table id="featuresPageTable" class="features-table">
+                        <thead>
+                            <tr>
+                                <th>Feature Title</th>
+                                <th>Pain Points</th>
+                            </tr>
+                        </thead>
+                        <tbody id="featuresPageTableBody">
+                            <!-- Features will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -897,7 +888,6 @@
 
         // Current state
         let currentAnalysis = null;
-        let featureSaveTimer = null;
 
         // Navigation
         function navigateTo(pageName) {
@@ -921,6 +911,11 @@
             const navItem = document.querySelector(`[data-page="${pageName}"]`);
             if (navItem) {
                 navItem.classList.add('active');
+            }
+
+            // Load features table when navigating to Features page
+            if (pageName === 'features') {
+                loadFeaturesPage();
             }
 
             // Close mobile menu
@@ -1026,15 +1021,9 @@
         // Analyze transcript
         async function analyzeTranscript() {
             const transcript = document.getElementById('transcript').value.trim();
-            const features = document.getElementById('features').value.trim();
 
             if (!transcript) {
                 alert('Please enter an interview transcript');
-                return;
-            }
-
-            if (!features) {
-                alert('Please enter your feature list');
                 return;
             }
 
@@ -1043,8 +1032,22 @@
             analyzeBtn.innerHTML = '<div class="spinner"></div>Analyzing...';
 
             try {
+                // Fetch features from the database
+                const featuresResponse = await fetch(`${API_BASE_URL}/api/features`);
+                const featuresData = await featuresResponse.json();
+
+                if (!featuresData.success || !featuresData.features || featuresData.features.length === 0) {
+                    alert('Please add some features first. Go to the Features page to view and manage features.');
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.innerHTML = 'Analyze Transcript';
+                    return;
+                }
+
+                // Convert features array to newline-separated string
+                const featuresString = featuresData.features.map(f => f.feature_name).join('\n');
+
                 // Call Claude API to analyze
-                const analysis = await callClaudeAPI(transcript, features);
+                const analysis = await callClaudeAPI(transcript, featuresString);
 
                 // Generate summary (first 60 chars of transcript)
                 const summary = transcript.substring(0, 60) + (transcript.length > 60 ? '...' : '');
@@ -1144,41 +1147,54 @@
                 `;
                 painPointsDiv.appendChild(ppDiv);
             });
-
-            // Display features table
-            displayFeaturesTable(analysis.painPoints);
         }
 
-        function displayFeaturesTable(painPoints) {
-            const tableBody = document.getElementById('featuresTableBody');
+        // Load and display features on the Features page
+        async function loadFeaturesPage() {
+            const tableBody = document.getElementById('featuresPageTableBody');
+            tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #6b6b6b; padding: 20px;">Loading features...</td></tr>';
+
+            try {
+                // Fetch all features with their pain point counts
+                const response = await fetch(`${API_BASE_URL}/api/features/details`);
+                if (!response.ok) {
+                    throw new Error('Failed to load features');
+                }
+
+                const data = await response.json();
+
+                if (!data.success || !data.features) {
+                    throw new Error('Invalid response format');
+                }
+
+                displayFeaturesPageTable(data.features);
+            } catch (error) {
+                console.error('Error loading features:', error);
+                tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #ff4444; padding: 20px;">Failed to load features</td></tr>';
+            }
+        }
+
+        function displayFeaturesPageTable(features) {
+            const tableBody = document.getElementById('featuresPageTableBody');
             tableBody.innerHTML = '';
 
-            // Count features
-            const featureCounts = {};
-            painPoints.forEach(pp => {
-                pp.mappedFeatures.forEach(feature => {
-                    featureCounts[feature] = (featureCounts[feature] || 0) + 1;
-                });
-            });
-
-            // Sort by count (descending)
-            const sortedFeatures = Object.entries(featureCounts)
-                .sort((a, b) => b[1] - a[1]);
-
-            if (sortedFeatures.length === 0) {
+            if (!features || features.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = '<td colspan="2" style="text-align: center; color: #6b6b6b; padding: 20px;">No features mapped yet</td>';
+                row.innerHTML = '<td colspan="2" style="text-align: center; color: #6b6b6b; padding: 20px;">No features available yet</td>';
                 tableBody.appendChild(row);
                 return;
             }
 
-            sortedFeatures.forEach(([feature, count]) => {
+            // Sort features by pain point count (descending)
+            const sortedFeatures = [...features].sort((a, b) => b.painPointCount - a.painPointCount);
+
+            sortedFeatures.forEach(feature => {
                 const row = document.createElement('tr');
-                row.onclick = () => openFeatureDrawer(feature);
+                row.onclick = () => openFeatureDrawer(feature.feature_name);
                 row.innerHTML = `
-                    <td class="feature-title-cell">${feature}</td>
+                    <td class="feature-title-cell">${feature.feature_name}</td>
                     <td class="pain-points-cell">
-                        <span class="pain-points-badge">${count}</span>
+                        <span class="pain-points-badge">${feature.painPointCount || 0}</span>
                     </td>
                 `;
                 tableBody.appendChild(row);
@@ -1306,9 +1322,10 @@
                     // Update current feature name if changed
                     currentFeature = featureName;
 
-                    // Reload the current analysis to reflect changes
-                    if (currentAnalysis && currentAnalysis.painPoints) {
-                        displayFeaturesTable(currentAnalysis.painPoints);
+                    // Reload the Features page table if we're on that page
+                    const featuresPage = document.getElementById('page-features');
+                    if (featuresPage && featuresPage.classList.contains('active')) {
+                        loadFeaturesPage();
                     }
 
                     alert('Feature updated successfully');
@@ -1338,9 +1355,10 @@
                     // Reload the drawer
                     await openFeatureDrawer(currentFeature);
 
-                    // Reload the features table
-                    if (currentAnalysis && currentAnalysis.painPoints) {
-                        displayFeaturesTable(currentAnalysis.painPoints);
+                    // Reload the Features page table if we're on that page
+                    const featuresPage = document.getElementById('page-features');
+                    if (featuresPage && featuresPage.classList.contains('active')) {
+                        loadFeaturesPage();
                     }
                 }
             } catch (error) {
@@ -1350,105 +1368,60 @@
         }
 
         // Features management
-        async function loadSavedFeatures() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/features`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.features.length > 0) {
-                        // Extract feature names from feature objects
-                        const featureNames = data.features.map(f => f.feature_name || f);
-                        document.getElementById('features').value = featureNames.join('\n');
-                        updateSaveStatus(`Loaded ${data.features.length} saved features`, 'success');
-                    }
-                }
-            } catch (error) {
-                console.log('Could not load saved features');
-            }
-        }
+        async function addNewFeatures() {
+            const newFeatureInput = document.getElementById('newFeatureInput');
+            const newFeaturesText = newFeatureInput.value.trim();
 
-        async function saveFeatures() {
-            const featuresText = document.getElementById('features').value.trim();
-
-            if (!featuresText) {
-                alert('Please enter some features first');
+            if (!newFeaturesText) {
+                alert('Please enter at least one feature');
                 return;
             }
 
-            const featuresArray = featuresText.split('\n')
+            const newFeatures = newFeaturesText.split('\n')
                 .filter(f => f.trim())
                 .map(f => f.trim());
 
             try {
-                updateSaveStatus('Saving...', 'info');
+                // Get existing features
+                const response = await fetch(`${API_BASE_URL}/api/features`);
+                const data = await response.json();
 
-                const response = await fetch(`${API_BASE_URL}/api/features`, {
+                const existingFeatures = data.success && data.features
+                    ? data.features.map(f => f.feature_name)
+                    : [];
+
+                // Combine with new features (avoiding duplicates)
+                const allFeatures = [...existingFeatures];
+                newFeatures.forEach(feature => {
+                    if (!allFeatures.includes(feature)) {
+                        allFeatures.push(feature);
+                    }
+                });
+
+                // Save all features
+                const saveResponse = await fetch(`${API_BASE_URL}/api/features`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        features: featuresArray
+                        features: allFeatures
                     })
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    updateSaveStatus(`Saved ${data.count} features`, 'success');
+                if (saveResponse.ok) {
+                    newFeatureInput.value = '';
+                    loadFeaturesPage();
+                    alert(`Added ${newFeatures.length} new feature(s)`);
                 } else {
-                    updateSaveStatus('Save failed', 'error');
+                    alert('Failed to add features');
                 }
             } catch (error) {
-                console.error('Error saving features:', error);
-                updateSaveStatus('Save failed', 'error');
+                console.error('Error adding features:', error);
+                alert('Failed to add features');
             }
         }
 
-        function autoSaveFeatures() {
-            clearTimeout(featureSaveTimer);
-            updateSaveStatus('Typing...', 'info');
-
-            featureSaveTimer = setTimeout(() => {
-                saveFeatures();
-            }, 1000);
-        }
-
-        function updateSaveStatus(message, type = 'info') {
-            const statusElement = document.getElementById('featureSaveStatus');
-            statusElement.textContent = message;
-
-            if (type === 'success') {
-                statusElement.style.color = '#10b981';
-            } else if (type === 'error') {
-                statusElement.style.color = '#f44336';
-            } else {
-                statusElement.style.color = '#6b6b6b';
-            }
-
-            if (type !== 'info') {
-                setTimeout(() => {
-                    statusElement.textContent = '';
-                }, 3000);
-            }
-        }
-
-        async function clearFeatures() {
-            if (confirm('Are you sure you want to clear all features?')) {
-                document.getElementById('features').value = '';
-
-                try {
-                    await fetch(`${API_BASE_URL}/api/features`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                    updateSaveStatus('Features cleared', 'success');
-                } catch (error) {
-                    console.log('Could not delete from database');
-                }
-            }
-        }
 
         function clearTranscriptField() {
             document.getElementById('transcript').value = '';
@@ -1524,12 +1497,7 @@
 
         // Initialize
         window.addEventListener('DOMContentLoaded', () => {
-            loadSavedFeatures();
             loadAnalysisHistory();
-
-            // Add auto-save for features
-            const featuresTextarea = document.getElementById('features');
-            featuresTextarea.addEventListener('input', autoSaveFeatures);
         });
     </script>
 </body>

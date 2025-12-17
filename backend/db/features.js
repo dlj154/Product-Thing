@@ -225,6 +225,42 @@ async function deleteFeatureMapping(mappingId) {
   }
 }
 
+/**
+ * Get all features with their pain point counts
+ * @param {string} userId - User identifier
+ * @returns {Promise<Array>} Array of features with pain point counts
+ */
+async function getAllFeaturesWithCounts(userId = 'default') {
+  try {
+    const result = await pool.query(`
+      SELECT
+        f.id,
+        f.feature_name,
+        f.description,
+        f.created_at,
+        f.updated_at,
+        COUNT(DISTINCT fm.id) as pain_point_count
+      FROM features f
+      LEFT JOIN feature_mappings fm ON f.feature_name = fm.feature_name
+      WHERE f.user_id = $1
+      GROUP BY f.id, f.feature_name, f.description, f.created_at, f.updated_at
+      ORDER BY pain_point_count DESC, f.id ASC
+    `, [userId]);
+
+    return result.rows.map(row => ({
+      id: row.id,
+      feature_name: row.feature_name,
+      description: row.description,
+      painPointCount: parseInt(row.pain_point_count) || 0,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
+  } catch (error) {
+    console.error('Error getting features with counts:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getFeatures,
   getFeatureNames,
@@ -232,5 +268,6 @@ module.exports = {
   deleteFeatures,
   getFeatureDetails,
   updateFeature,
-  deleteFeatureMapping
+  deleteFeatureMapping,
+  getAllFeaturesWithCounts
 };

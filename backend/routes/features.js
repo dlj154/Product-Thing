@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getFeatures, getFeatureNames, saveFeatures, deleteFeatures, getFeatureDetails, updateFeature, deleteFeatureMapping } = require('../db/features');
+const { getFeatures, getFeatureNames, saveFeatures, deleteFeatures, getFeatureDetails, updateFeature, deleteFeatureMapping, getAllFeaturesWithCounts } = require('../db/features');
 
 /**
  * GET /api/features
@@ -84,6 +84,30 @@ router.delete('/', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete features',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/features/details
+ * Get all features with their pain point counts
+ */
+router.get('/details', async (req, res) => {
+  try {
+    const userId = req.query.userId || 'default';
+    const features = await getAllFeaturesWithCounts(userId);
+
+    res.json({
+      success: true,
+      features,
+      count: features.length
+    });
+  } catch (error) {
+    console.error('Error retrieving features with counts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve features',
       message: error.message
     });
   }
