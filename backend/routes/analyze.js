@@ -46,49 +46,110 @@ router.post('/', async (req, res) => {
 
     console.log(`Analyzing transcript (${transcript.length} chars) with ${features.split('\n').length} features`);
 
-    // Construct prompt for Claude
-    const prompt = `You are analyzing a customer interview transcript to extract pain points and map them to potential product features.
+    // Construct system prompt with instructions
+    const systemPrompt = `You are an expert analyst specializing in extracting customer pain points from interview transcripts and mapping them to product features.
 
-INTERVIEW TRANSCRIPT:
-${transcript}
+Your task is to:
+1. Identify pain points that represent genuine customer problems, frustrations, or unmet needs
+2. Extract contextually complete quotes that demonstrate each pain point
+3. Map pain points to relevant features from the provided feature list
+4. Synthesize findings into actionable summaries
 
-FEATURE LIST:
-${features}
+## Pain Point Criteria
 
-Please analyze this transcript and provide:
+A pain point is:
+- A current problem, inefficiency, or obstacle the customer faces
+- An expressed frustration, complaint, or dissatisfaction
+- An unmet need or desired capability
+- A workaround the customer currently uses
+- A mentioned time cost, financial cost, or resource constraint
 
-1. Extract all pain points mentioned by the customer (problems, frustrations, difficulties, needs)
-2. For each pain point, provide a direct quote from the transcript that demonstrates it
-3. Map each pain point to one or more relevant features from the feature list
-4. Group the results by feature, with each feature having:
-   - An AI-generated summary that synthesizes all the pain points mapped to that feature
-   - All the quotes associated with those pain points
+## Quote Extraction Guidelines
 
-Return your analysis in the following JSON format:
+- Use VERBATIM quotes from the transcript only - no paraphrasing
+- Include preceding context (what led to the issue being discussed)
+- Include the core statement about the pain point
+- Include following context (impact, elaboration, or consequences)
+- Include dialogue from ALL participants (customer, interviewer, etc.) if it adds context
+- Include speaker labels (e.g., "Interviewer:", "Customer:") when multiple speakers are present
+- Use ellipsis (…) to eliminate extraneous details from lengthy quotes
+- Target length: 10-150 words
+- Quotes must be self-contained and understandable without reading the full transcript
+
+## Feature Mapping Guidelines
+
+- Only map pain points that clearly relate to a feature in the provided list
+- If a pain point doesn't clearly map to any feature, skip it
+- Quotes may appear under multiple features if truly relevant, but prioritize only the strongest/most relevant feature mappings
+- Use exact feature names from the provided list
+
+## AI Summary Guidelines
+
+For each feature:
+- Synthesize themes across all pain points mapped to that feature
+- Focus on actionable, product-oriented insights
+- Highlight the intensity or frequency of the pain if evident
+- Keep summaries concise (1-2 sentences)
+
+## Output Format
+
+Return ONLY valid JSON with no additional text or explanation. Follow this structure:
+
 {
   "features": [
     {
-      "featureName": "Feature name from the feature list",
-      "aiSummary": "A concise summary (1-2 sentences) synthesizing all pain points for this feature",
+      "featureName": "Exact feature name from the provided list",
+      "aiSummary": "Concise synthesis of all pain points for this feature",
       "quotes": [
         {
-          "quote": "Exact quote from transcript",
-          "painPoint": "Description of the pain point this quote represents"
+          "quote": "Verbatim quote with context (10-150 words)",
+          "painPoint": "Clear description of what pain point this quote represents"
         }
       ]
     }
   ]
 }
 
-Be thorough and extract all pain points, even subtle ones. Make sure quotes are exact excerpts from the transcript. Each feature should appear only once, with all relevant quotes grouped under it.`;
+## Example
 
-    // Call Claude API
+Given transcript snippet:
+"Interviewer: How do you currently track customer feedback? Customer: We use spreadsheets, but honestly it's a nightmare. Every time someone submits feedback through email, I have to manually copy it into our master sheet. It takes me about 2 hours every week just doing data entry, and I still miss things."
+
+Given feature: "Automated Feedback Collection"
+
+Expected output:
+{
+  "features": [
+    {
+      "featureName": "Automated Feedback Collection",
+      "aiSummary": "Customers are spending significant time on manual data entry to consolidate feedback from multiple sources, leading to inefficiency and data loss.",
+      "quotes": [
+        {
+          "quote": "Interviewer: How do you currently track customer feedback? Customer: We use spreadsheets, but honestly it's a nightmare. Every time someone submits feedback through email, I have to manually copy it into our master sheet. It takes me about 2 hours every week just doing data entry, and I still miss things.",
+          "painPoint": "Manual data entry for feedback consolidation is time-consuming and error-prone"
+        }
+      ]
+    }
+  ]
+}`;
+
+    // Construct user message with data
+    const userMessage = `INTERVIEW TRANSCRIPT:
+${transcript}
+
+FEATURE LIST:
+${features}
+
+Analyze this transcript and extract pain points mapped to features. Return only valid JSON.`;
+
+    // Call Claude API with system and user messages
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
+      system: systemPrompt,
       messages: [{
         role: 'user',
-        content: prompt
+        content: userMessage
       }]
     });
 
