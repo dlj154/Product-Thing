@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
 
 Your task is to:
 1. Identify pain points that represent genuine customer problems, frustrations, or unmet needs
-2. Extract contextually complete quotes that demonstrate each pain point
+2. Extract ONE comprehensive quote per pain point that includes all related dialogue exchanges
 3. Map pain points to relevant features from the provided feature list
 4. Synthesize findings into actionable summaries
 
@@ -67,14 +67,16 @@ A pain point is:
 ## Quote Extraction Guidelines
 
 - Use VERBATIM quotes from the transcript only - no paraphrasing
+- **CRITICAL: Consolidate related exchanges into ONE quote** - If multiple back-and-forth exchanges discuss the same pain point, combine them into a single quote rather than creating separate quotes
 - Include preceding context (what led to the issue being discussed)
 - Include the core statement about the pain point
 - Include following context (impact, elaboration, or consequences)
-- Include dialogue from ALL participants (customer, interviewer, etc.) if it adds context
+- Include dialogue from ALL participants (customer, interviewer, etc.) when they discuss the same pain point
 - Include speaker labels (e.g., "Interviewer:", "Customer:") when multiple speakers are present
-- Use ellipsis (…) to eliminate extraneous details from lengthy quotes
-- Target length: 10-150 words
+- Use ellipsis (…) to eliminate extraneous details from lengthy quotes or to skip unrelated tangents between related exchanges
+- Target length: 10-150 words (longer is acceptable if the conversation naturally extends across multiple exchanges about the same pain point)
 - Quotes must be self-contained and understandable without reading the full transcript
+- Each feature should typically have 1-3 quotes maximum, with each quote covering a distinct pain point
 
 ## Feature Mapping Guidelines
 
@@ -113,20 +115,20 @@ Return ONLY valid JSON with no additional text or explanation. Follow this struc
 ## Example
 
 Given transcript snippet:
-"Interviewer: How do you currently track customer feedback? Customer: We use spreadsheets, but honestly it's a nightmare. Every time someone submits feedback through email, I have to manually copy it into our master sheet. It takes me about 2 hours every week just doing data entry, and I still miss things."
+"Maya: What's stopping you from doing that today? Chris: User management, mainly. We need better authentication and permissions. We're a big company, so SSO is basically table stakes. Also, not everyone should be able to edit everything. Maya: What kind of permissions would you want? Chris: Admins who manage integrations, editors who can tag and map insights, and viewers who can just see trends and evidence. Without that, I can't responsibly open it up. Maya: Is security or compliance part of the concern as well? Chris: Yes, especially when calls include sensitive customer info. Leadership will ask those questions immediately."
 
-Given feature: "Automated Feedback Collection"
+Given feature: "Manager Users"
 
 Expected output:
 {
   "features": [
     {
-      "featureName": "Automated Feedback Collection",
-      "aiSummary": "Customers are spending significant time on manual data entry to consolidate feedback from multiple sources, leading to inefficiency and data loss.",
+      "featureName": "Manager Users",
+      "aiSummary": "Lack of proper user management and permission controls prevents broader organizational rollout, as companies cannot safely grant access without role-based permissions for admins, editors, and viewers.",
       "quotes": [
         {
-          "quote": "Interviewer: How do you currently track customer feedback? Customer: We use spreadsheets, but honestly it's a nightmare. Every time someone submits feedback through email, I have to manually copy it into our master sheet. It takes me about 2 hours every week just doing data entry, and I still miss things.",
-          "painPoint": "Manual data entry for feedback consolidation is time-consuming and error-prone"
+          "quote": "Maya: What's stopping you from doing that today? Chris: User management, mainly. We need better authentication and permissions. We're a big company, so SSO is basically table stakes. Also, not everyone should be able to edit everything. Maya: What kind of permissions would you want? Chris: Admins who manage integrations, editors who can tag and map insights, and viewers who can just see trends and evidence. Without that, I can't responsibly open it up. Maya: Is security or compliance part of the concern as well? Chris: Yes, especially when calls include sensitive customer info. Leadership will ask those questions immediately.",
+          "painPoint": "Lack of role-based access controls and SSO prevents safe organizational rollout"
         }
       ]
     }

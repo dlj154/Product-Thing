@@ -1072,8 +1072,8 @@
             `;
 
             transcript.features.forEach((feature, index) => {
-                const quotesHTML = feature.quotes.map((quoteObj, quoteIndex) =>
-                    `<div class="quote">${quoteIndex + 1}. "${quoteObj.quote}"</div>`
+                const quotesHTML = feature.quotes.map((quoteObj) =>
+                    `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
                 ).join('');
 
                 html += `
@@ -1199,6 +1199,21 @@
             }
         }
 
+        // Helper function to format quotes with line breaks between speakers (HTML)
+        function formatQuoteWithLineBreaks(quote) {
+            // Replace speaker labels with line breaks before them (except the first one)
+            // Pattern: matches "Name: " where Name starts with a capital letter
+            return quote.replace(/([.!?]\s+)([A-Z][^:]+:)/g, '$1<br>$2')
+                        .replace(/^([A-Z][^:]+:)/g, '$1'); // Keep first speaker label without <br>
+        }
+
+        // Helper function to format quotes with line breaks for plain text export
+        function formatQuoteWithLineBreaksText(quote) {
+            // Replace speaker labels with line breaks before them (except the first one)
+            return quote.replace(/([.!?]\s+)([A-Z][^:]+:)/g, '$1\n$2')
+                        .replace(/^([A-Z][^:]+:)/g, '$1'); // Keep first speaker label without newline
+        }
+
         function displayResults(analysis) {
             const resultsDiv = document.getElementById('results');
             resultsDiv.style.display = 'block';
@@ -1212,8 +1227,8 @@
                 featureDiv.className = 'pain-point';
 
                 // Build quotes HTML
-                const quotesHTML = feature.quotes.map((quoteObj, quoteIndex) =>
-                    `<div class="quote">${quoteIndex + 1}. "${quoteObj.quote}"</div>`
+                const quotesHTML = feature.quotes.map((quoteObj) =>
+                    `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
                 ).join('');
 
                 featureDiv.innerHTML = `
@@ -1551,8 +1566,11 @@
             analysis.features.forEach((feature, index) => {
                 text += `${index + 1}. ${feature.featureName}\n`;
                 text += `   AI Summary: ${feature.aiSummary}\n\n`;
-                feature.quotes.forEach((quoteObj, quoteIndex) => {
-                    text += `   Quote ${quoteIndex + 1}: "${quoteObj.quote}"\n`;
+                feature.quotes.forEach((quoteObj) => {
+                    // Format quote with line breaks and indent each line
+                    const formattedQuote = formatQuoteWithLineBreaksText(quoteObj.quote);
+                    const indentedQuote = formattedQuote.split('\n').map(line => `   ${line}`).join('\n');
+                    text += `${indentedQuote}\n\n`;
                 });
                 text += `\n`;
             });
