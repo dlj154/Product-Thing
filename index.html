@@ -1112,32 +1112,13 @@
                         `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
                     ).join('');
 
-                    // Build history warning HTML
-                    let historyHTML = '';
-                    if (suggestion.history && suggestion.history.appearedInOtherTranscripts) {
-                        const { otherTranscriptCount, otherPainPointCount, previouslyIgnored, previouslyApproved } = suggestion.history;
-
-                        if (previouslyIgnored) {
-                            historyHTML = `
-                                <div style="margin-top: 12px; padding: 10px 12px; background: #fff3cd; border-left: 3px solid #ff9800; border-radius: 4px; font-size: 13px;">
-                                    <strong>⚠️ Previously Ignored:</strong> This suggestion was ignored in ${otherTranscriptCount} other transcript${otherTranscriptCount > 1 ? 's' : ''} (${otherPainPointCount} pain point${otherPainPointCount > 1 ? 's' : ''}).
-                                    Consider if the accumulated evidence warrants reconsidering.
-                                </div>
-                            `;
-                        } else if (previouslyApproved) {
-                            historyHTML = `
-                                <div style="margin-top: 12px; padding: 10px 12px; background: #e3f2fd; border-left: 3px solid #2196f3; border-radius: 4px; font-size: 13px;">
-                                    <strong>ℹ️ Note:</strong> This feature was already approved in another transcript and is in your Features list.
-                                </div>
-                            `;
-                        } else {
-                            historyHTML = `
-                                <div style="margin-top: 12px; padding: 10px 12px; background: #e8f5e9; border-left: 3px solid #4caf50; border-radius: 4px; font-size: 13px;">
-                                    <strong>📊 Also appeared in ${otherTranscriptCount} other transcript${otherTranscriptCount > 1 ? 's' : ''}</strong> (${otherPainPointCount} pain point${otherPainPointCount > 1 ? 's' : ''})
-                                </div>
-                            `;
-                        }
-                    }
+                    // Calculate pain points count (total transcripts where this suggestion appeared)
+                    const painPointsCount = suggestion.history ? suggestion.history.totalAcrossAllTranscripts : 1;
+                    const painPointsBadge = `
+                        <span style="display: inline-block; background: #000000; color: #ffffff; padding: 4px 12px; border-radius: 12px; font-size: 13px; margin-left: 8px; font-weight: 600;">
+                            ${painPointsCount} Pain Point${painPointsCount > 1 ? 's' : ''}
+                        </span>
+                    `;
 
                     // Build action buttons HTML based on status
                     let actionHTML = '';
@@ -1171,14 +1152,15 @@
 
                     html += `
                         <div class="pain-point" id="suggestion-${suggestion.id}">
-                            <div class="pain-point-text">${index + 1}. ${suggestion.featureName}</div>
+                            <div class="pain-point-text">
+                                ${index + 1}. ${suggestion.featureName}${painPointsBadge}
+                            </div>
                             <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
                                 AI Summary:
                             </div>
                             <div style="margin: 8px 0; color: #333333; font-style: italic;">
                                 ${suggestion.aiSummary}
                             </div>
-                            ${historyHTML}
                             <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
                                 Quotes:
                             </div>
@@ -1229,11 +1211,17 @@
                 const summary = transcript.substring(0, 60) + (transcript.length > 60 ? '...' : '');
 
                 // Save to database
-                await saveTranscriptToDatabase(transcript, summary, analysis.features, analysis.newFeatureSuggestions);
+                const transcriptId = await saveTranscriptToDatabase(transcript, summary, analysis.features, analysis.newFeatureSuggestions);
 
-                // Display results
-                currentAnalysis = analysis;
-                displayResults(analysis);
+                // Reload the transcript with history to get enriched suggestions
+                const enrichedTranscript = await fetchTranscriptWithHistory(transcriptId);
+
+                // Display results with enriched data
+                currentAnalysis = {
+                    features: enrichedTranscript.features,
+                    newFeatureSuggestions: enrichedTranscript.newFeatureSuggestions
+                };
+                displayResults(currentAnalysis);
 
                 // Clear transcript field
                 document.getElementById('transcript').value = '';
@@ -1279,7 +1267,7 @@
 
         async function saveTranscriptToDatabase(transcriptText, summary, features, newFeatureSuggestions) {
             try {
-                await fetch(`${API_BASE_URL}/api/transcripts`, {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1291,8 +1279,29 @@
                         newFeatureSuggestions
                     })
                 });
+
+                const data = await response.json();
+                if (data.success && data.transcriptId) {
+                    return data.transcriptId;
+                }
+                return null;
             } catch (error) {
                 console.log('Could not save to database (not configured)');
+                return null;
+            }
+        }
+
+        async function fetchTranscriptWithHistory(transcriptId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts/${transcriptId}?withHistory=true`);
+                const data = await response.json();
+                if (data.success && data.transcript) {
+                    return data.transcript;
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching transcript with history:', error);
+                return null;
             }
         }
 
@@ -1362,32 +1371,13 @@
                         `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
                     ).join('');
 
-                    // Build history warning HTML if available
-                    let historyHTML = '';
-                    if (suggestion.history && suggestion.history.appearedInOtherTranscripts) {
-                        const { otherTranscriptCount, otherPainPointCount, previouslyIgnored, previouslyApproved } = suggestion.history;
-
-                        if (previouslyIgnored) {
-                            historyHTML = `
-                                <div style="margin-top: 12px; padding: 10px 12px; background: #fff3cd; border-left: 3px solid #ff9800; border-radius: 4px; font-size: 13px;">
-                                    <strong>⚠️ Previously Ignored:</strong> This suggestion was ignored in ${otherTranscriptCount} other transcript${otherTranscriptCount > 1 ? 's' : ''} (${otherPainPointCount} pain point${otherPainPointCount > 1 ? 's' : ''}).
-                                    Consider if the accumulated evidence warrants reconsidering.
-                                </div>
-                            `;
-                        } else if (previouslyApproved) {
-                            historyHTML = `
-                                <div style="margin-top: 12px; padding: 10px 12px; background: #e3f2fd; border-left: 3px solid #2196f3; border-radius: 4px; font-size: 13px;">
-                                    <strong>ℹ️ Note:</strong> This feature was already approved in another transcript and is in your Features list.
-                                </div>
-                            `;
-                        } else {
-                            historyHTML = `
-                                <div style="margin-top: 12px; padding: 10px 12px; background: #e8f5e9; border-left: 3px solid #4caf50; border-radius: 4px; font-size: 13px;">
-                                    <strong>📊 Also appeared in ${otherTranscriptCount} other transcript${otherTranscriptCount > 1 ? 's' : ''}</strong> (${otherPainPointCount} pain point${otherPainPointCount > 1 ? 's' : ''})
-                                </div>
-                            `;
-                        }
-                    }
+                    // Calculate pain points count (total transcripts where this suggestion appeared)
+                    const painPointsCount = suggestion.history ? suggestion.history.totalAcrossAllTranscripts : 1;
+                    const painPointsBadge = `
+                        <span style="display: inline-block; background: #000000; color: #ffffff; padding: 4px 12px; border-radius: 12px; font-size: 13px; margin-left: 8px; font-weight: 600;">
+                            ${painPointsCount} Pain Point${painPointsCount > 1 ? 's' : ''}
+                        </span>
+                    `;
 
                     // Build action buttons HTML based on status
                     let actionHTML = '';
@@ -1420,14 +1410,15 @@
                     }
 
                     suggestionDiv.innerHTML = `
-                        <div class="pain-point-text">${index + 1}. ${suggestion.featureName}</div>
+                        <div class="pain-point-text">
+                            ${index + 1}. ${suggestion.featureName}${painPointsBadge}
+                        </div>
                         <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
                             AI Summary:
                         </div>
                         <div style="margin: 8px 0; color: #333333; font-style: italic;">
                             ${suggestion.aiSummary}
                         </div>
-                        ${historyHTML}
                         <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
                             Quotes:
                         </div>
