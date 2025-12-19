@@ -22,6 +22,12 @@ async function initDatabase() {
       ADD COLUMN IF NOT EXISTS description TEXT
     `);
 
+    // Add is_suggestion column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE features
+      ADD COLUMN IF NOT EXISTS is_suggestion BOOLEAN DEFAULT FALSE
+    `);
+
     // Create index for faster queries
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_features_user_id

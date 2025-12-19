@@ -56,6 +56,19 @@ async function saveTranscript(userId, transcriptText, summary, features, newFeat
           [suggestionId, quoteObj.quote, quoteObj.painPoint]
         );
       }
+
+      // Also add the suggestion to the features table if it doesn't exist
+      const existingFeature = await client.query(
+        'SELECT id FROM features WHERE user_id = $1 AND feature_name = $2',
+        [userId, suggestion.featureName]
+      );
+
+      if (existingFeature.rows.length === 0) {
+        await client.query(
+          'INSERT INTO features (user_id, feature_name, description, is_suggestion) VALUES ($1, $2, $3, $4)',
+          [userId, suggestion.featureName, suggestion.aiSummary, true]
+        );
+      }
     }
 
     await client.query('COMMIT');

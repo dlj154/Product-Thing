@@ -82,6 +82,7 @@ A pain point is:
 ## Feature Mapping Guidelines
 
 - Only map pain points that clearly relate to a feature in the provided list
+- The feature list may include both user-defined features and AI-suggested features from previous transcripts
 - If a pain point doesn't clearly map to any feature, skip it
 - Quotes may appear under multiple features if truly relevant, but prioritize only the strongest/most relevant feature mappings
 - Use exact feature names from the provided list

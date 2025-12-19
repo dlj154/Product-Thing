@@ -1125,9 +1125,9 @@
                                 Quotes:
                             </div>
                             ${quotesHTML}
-                            <button class="btn-primary" onclick="createFeatureFromSuggestion('${suggestion.featureName.replace(/'/g, "\\'")}')" style="margin-top: 12px;">
-                                Create Feature
-                            </button>
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
+                                ✓ Added to your Features list
+                            </div>
                         </div>
                     `;
                 });
@@ -1317,9 +1317,9 @@
                             Quotes:
                         </div>
                         ${quotesHTML}
-                        <button class="btn-primary" onclick="createFeatureFromSuggestion('${suggestion.featureName.replace(/'/g, "\\'")}')" style="margin-top: 12px;">
-                            Create Feature
-                        </button>
+                        <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
+                            ✓ Automatically added to your Features list
+                        </div>
                     `;
                     newFeatureSuggestionsDiv.appendChild(suggestionDiv);
                 });
@@ -1370,8 +1370,11 @@
             sortedFeatures.forEach(feature => {
                 const row = document.createElement('tr');
                 row.onclick = () => openFeatureDrawer(feature.feature_name);
+                const suggestionBadge = feature.is_suggestion
+                    ? '<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px; font-weight: 600;">AI Suggested</span>'
+                    : '';
                 row.innerHTML = `
-                    <td class="feature-title-cell">${feature.feature_name}</td>
+                    <td class="feature-title-cell">${feature.feature_name}${suggestionBadge}</td>
                     <td class="pain-points-cell">
                         <span class="pain-points-badge">${feature.painPointCount || 0}</span>
                     </td>
