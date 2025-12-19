@@ -53,7 +53,8 @@ Your task is to:
 1. Identify pain points that represent genuine customer problems, frustrations, or unmet needs
 2. Extract ONE comprehensive quote per pain point that includes all related dialogue exchanges
 3. Map pain points to relevant features from the provided feature list
-4. Synthesize findings into actionable summaries
+4. Suggest NEW features for pain points that don't map to existing features
+5. Synthesize findings into actionable summaries
 
 ## Pain Point Criteria
 
@@ -93,6 +94,16 @@ For each feature:
 - Highlight the intensity or frequency of the pain if evident
 - Keep summaries concise (1-2 sentences)
 
+## New Feature Suggestion Guidelines
+
+For pain points that don't map to existing features:
+- Suggest a NEW feature that would address the pain point
+- Give the feature a clear, descriptive name (2-5 words)
+- Ensure the suggested feature is genuinely NEW and not in the provided feature list
+- Avoid suggesting minor variations of existing features
+- Focus on features that would have meaningful impact based on the pain points
+- Follow the same quote extraction and AI summary guidelines as existing features
+
 ## Output Format
 
 Return ONLY valid JSON with no additional text or explanation. Follow this structure:
@@ -109,15 +120,27 @@ Return ONLY valid JSON with no additional text or explanation. Follow this struc
         }
       ]
     }
+  ],
+  "newFeatureSuggestions": [
+    {
+      "featureName": "New feature name (2-5 words, NOT in the provided feature list)",
+      "aiSummary": "Concise explanation of why this feature is needed based on pain points",
+      "quotes": [
+        {
+          "quote": "Verbatim quote with context (10-150 words)",
+          "painPoint": "Clear description of what pain point this quote represents"
+        }
+      ]
+    }
   ]
 }
 
 ## Example
 
 Given transcript snippet:
-"Maya: What's stopping you from doing that today? Chris: User management, mainly. We need better authentication and permissions. We're a big company, so SSO is basically table stakes. Also, not everyone should be able to edit everything. Maya: What kind of permissions would you want? Chris: Admins who manage integrations, editors who can tag and map insights, and viewers who can just see trends and evidence. Without that, I can't responsibly open it up. Maya: Is security or compliance part of the concern as well? Chris: Yes, especially when calls include sensitive customer info. Leadership will ask those questions immediately."
+"Maya: What's stopping you from doing that today? Chris: User management, mainly. We need better authentication and permissions. We're a big company, so SSO is basically table stakes. Also, not everyone should be able to edit everything. Maya: What kind of permissions would you want? Chris: Admins who manage integrations, editors who can tag and map insights, and viewers who can just see trends and evidence. Without that, I can't responsibly open it up. Maya: Is security or compliance part of the concern as well? Chris: Yes, especially when calls include sensitive customer info. Leadership will ask those questions immediately. Maya: How do you currently share insights from calls? Chris: We're stuck taking screenshots and pasting them into Slack or email. It's tedious, and you lose all the context. Maya: What would make that easier? Chris: Some kind of direct integration where I could push key findings straight to our team channels without all the copy-paste work."
 
-Given feature: "Manager Users"
+Given feature list: "Manager Users"
 
 Expected output:
 {
@@ -129,6 +152,18 @@ Expected output:
         {
           "quote": "Maya: What's stopping you from doing that today? Chris: User management, mainly. We need better authentication and permissions. We're a big company, so SSO is basically table stakes. Also, not everyone should be able to edit everything. Maya: What kind of permissions would you want? Chris: Admins who manage integrations, editors who can tag and map insights, and viewers who can just see trends and evidence. Without that, I can't responsibly open it up. Maya: Is security or compliance part of the concern as well? Chris: Yes, especially when calls include sensitive customer info. Leadership will ask those questions immediately.",
           "painPoint": "Lack of role-based access controls and SSO prevents safe organizational rollout"
+        }
+      ]
+    }
+  ],
+  "newFeatureSuggestions": [
+    {
+      "featureName": "Slack Integration",
+      "aiSummary": "Users waste time manually copying insights via screenshots and lose important context when sharing findings with their teams through current methods.",
+      "quotes": [
+        {
+          "quote": "Maya: How do you currently share insights from calls? Chris: We're stuck taking screenshots and pasting them into Slack or email. It's tedious, and you lose all the context. Maya: What would make that easier? Chris: Some kind of direct integration where I could push key findings straight to our team channels without all the copy-paste work.",
+          "painPoint": "Manual screenshot workflow for sharing insights is tedious and loses context"
         }
       ]
     }
@@ -178,9 +213,15 @@ Analyze this transcript and extract pain points mapped to features. Return only 
       });
     }
 
+    // Initialize newFeatureSuggestions if not present
+    if (!analysis.newFeatureSuggestions) {
+      analysis.newFeatureSuggestions = [];
+    }
+
     // Count total quotes across all features
     const totalQuotes = analysis.features.reduce((sum, feature) => sum + (feature.quotes?.length || 0), 0);
-    console.log(`Successfully analyzed: found ${analysis.features.length} features with ${totalQuotes} total quotes`);
+    const totalSuggestionQuotes = analysis.newFeatureSuggestions.reduce((sum, feature) => sum + (feature.quotes?.length || 0), 0);
+    console.log(`Successfully analyzed: found ${analysis.features.length} features with ${totalQuotes} total quotes, ${analysis.newFeatureSuggestions.length} new feature suggestions with ${totalSuggestionQuotes} quotes`);
 
     res.json({
       success: true,
@@ -189,6 +230,8 @@ Analyze this transcript and extract pain points mapped to features. Return only 
         transcriptLength: transcript.length,
         featuresFound: analysis.features.length,
         quotesFound: totalQuotes,
+        newFeatureSuggestionsFound: analysis.newFeatureSuggestions.length,
+        suggestionQuotesFound: totalSuggestionQuotes,
         timestamp: new Date().toISOString()
       }
     });

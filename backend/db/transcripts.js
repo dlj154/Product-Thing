@@ -3,7 +3,7 @@ const pool = require('./pool');
 /**
  * Save a transcript with its feature mappings and summaries
  */
-async function saveTranscript(userId, transcriptText, summary, features) {
+async function saveTranscript(userId, transcriptText, summary, features, newFeatureSuggestions = []) {
   const client = await pool.connect();
 
   try {
@@ -36,6 +36,24 @@ async function saveTranscript(userId, transcriptText, summary, features) {
         await client.query(
           'INSERT INTO feature_mappings (pain_point_id, feature_name) VALUES ($1, $2)',
           [painPointId, feature.featureName]
+        );
+      }
+    }
+
+    // Insert new feature suggestions
+    for (const suggestion of newFeatureSuggestions) {
+      // Insert the feature suggestion with AI summary
+      const suggestionResult = await client.query(
+        'INSERT INTO transcript_feature_suggestions (transcript_id, feature_name, ai_summary) VALUES ($1, $2, $3) RETURNING id',
+        [transcriptId, suggestion.featureName, suggestion.aiSummary]
+      );
+      const suggestionId = suggestionResult.rows[0].id;
+
+      // Insert quotes for this suggestion
+      for (const quoteObj of suggestion.quotes) {
+        await client.query(
+          'INSERT INTO feature_suggestion_quotes (suggestion_id, quote, pain_point) VALUES ($1, $2, $3)',
+          [suggestionId, quoteObj.quote, quoteObj.painPoint]
         );
       }
     }
@@ -120,12 +138,51 @@ async function getTranscriptById(transcriptId) {
       });
     });
 
+    // Get new feature suggestions for this transcript
+    const suggestionsResult = await client.query(
+      'SELECT id, feature_name, ai_summary FROM transcript_feature_suggestions WHERE transcript_id = $1',
+      [transcriptId]
+    );
+
+    // Get quotes for all suggestions
+    const suggestionIds = suggestionsResult.rows.map(row => row.id);
+    let suggestionQuotesResult = { rows: [] };
+
+    if (suggestionIds.length > 0) {
+      suggestionQuotesResult = await client.query(`
+        SELECT suggestion_id, quote, pain_point
+        FROM feature_suggestion_quotes
+        WHERE suggestion_id = ANY($1)
+        ORDER BY suggestion_id, id
+      `, [suggestionIds]);
+    }
+
+    // Build a map of suggestion_id to quotes
+    const suggestionQuotesMap = {};
+    suggestionQuotesResult.rows.forEach(row => {
+      if (!suggestionQuotesMap[row.suggestion_id]) {
+        suggestionQuotesMap[row.suggestion_id] = [];
+      }
+      suggestionQuotesMap[row.suggestion_id].push({
+        quote: row.quote,
+        painPoint: row.pain_point
+      });
+    });
+
+    // Build new feature suggestions array
+    const newFeatureSuggestions = suggestionsResult.rows.map(row => ({
+      featureName: row.feature_name,
+      aiSummary: row.ai_summary,
+      quotes: suggestionQuotesMap[row.id] || []
+    }));
+
     return {
       id: transcript.id,
       transcriptText: transcript.transcript_text,
       summary: transcript.summary,
       createdAt: transcript.created_at,
-      features: Object.values(featuresMap)
+      features: Object.values(featuresMap),
+      newFeatureSuggestions: newFeatureSuggestions
     };
   } finally {
     client.release();

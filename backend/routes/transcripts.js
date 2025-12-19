@@ -64,7 +64,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { transcriptText, summary, features } = req.body;
+    const { transcriptText, summary, features, newFeatureSuggestions } = req.body;
     const userId = req.body.userId || 'default';
 
     if (!transcriptText || !features) {
@@ -74,7 +74,13 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const transcriptId = await saveTranscript(userId, transcriptText, summary, features);
+    const transcriptId = await saveTranscript(
+      userId,
+      transcriptText,
+      summary,
+      features,
+      newFeatureSuggestions || []
+    );
 
     res.json({
       success: true,

@@ -807,6 +807,11 @@
                     <div id="painPoints"></div>
                 </div>
 
+                <div class="results-section" id="newFeatureSuggestionsSection" style="display: none;">
+                    <h3>New Feature Suggestions</h3>
+                    <div id="newFeatureSuggestions"></div>
+                </div>
+
                 <div class="button-group">
                     <button class="btn-primary" onclick="exportResults()">
                         Export Results
@@ -1095,6 +1100,41 @@
 
             html += '</div>';
 
+            // Add new feature suggestions if present
+            if (transcript.newFeatureSuggestions && transcript.newFeatureSuggestions.length > 0) {
+                html += `
+                    <div class="results-section">
+                        <h3>New Feature Suggestions</h3>
+                `;
+
+                transcript.newFeatureSuggestions.forEach((suggestion, index) => {
+                    const quotesHTML = suggestion.quotes.map((quoteObj) =>
+                        `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
+                    ).join('');
+
+                    html += `
+                        <div class="pain-point">
+                            <div class="pain-point-text">${index + 1}. ${suggestion.featureName}</div>
+                            <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
+                                AI Summary:
+                            </div>
+                            <div style="margin: 8px 0; color: #333333; font-style: italic;">
+                                ${suggestion.aiSummary}
+                            </div>
+                            <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
+                                Quotes:
+                            </div>
+                            ${quotesHTML}
+                            <button class="btn-primary" onclick="createFeatureFromSuggestion('${suggestion.featureName.replace(/'/g, "\\'")}')" style="margin-top: 12px;">
+                                Create Feature
+                            </button>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            }
+
             content.innerHTML = html;
         }
 
@@ -1133,7 +1173,7 @@
                 const summary = transcript.substring(0, 60) + (transcript.length > 60 ? '...' : '');
 
                 // Save to database
-                await saveTranscriptToDatabase(transcript, summary, analysis.features);
+                await saveTranscriptToDatabase(transcript, summary, analysis.features, analysis.newFeatureSuggestions);
 
                 // Display results
                 currentAnalysis = analysis;
@@ -1181,7 +1221,7 @@
             return data.analysis;
         }
 
-        async function saveTranscriptToDatabase(transcriptText, summary, features) {
+        async function saveTranscriptToDatabase(transcriptText, summary, features, newFeatureSuggestions) {
             try {
                 await fetch(`${API_BASE_URL}/api/transcripts`, {
                     method: 'POST',
@@ -1191,7 +1231,8 @@
                     body: JSON.stringify({
                         transcriptText,
                         summary,
-                        features
+                        features,
+                        newFeatureSuggestions
                     })
                 });
             } catch (error) {
@@ -1246,6 +1287,45 @@
                 `;
                 painPointsDiv.appendChild(featureDiv);
             });
+
+            // Display new feature suggestions if present
+            const newFeatureSuggestionsSection = document.getElementById('newFeatureSuggestionsSection');
+            const newFeatureSuggestionsDiv = document.getElementById('newFeatureSuggestions');
+
+            if (analysis.newFeatureSuggestions && analysis.newFeatureSuggestions.length > 0) {
+                newFeatureSuggestionsSection.style.display = 'block';
+                newFeatureSuggestionsDiv.innerHTML = '';
+
+                analysis.newFeatureSuggestions.forEach((suggestion, index) => {
+                    const suggestionDiv = document.createElement('div');
+                    suggestionDiv.className = 'pain-point';
+
+                    // Build quotes HTML
+                    const quotesHTML = suggestion.quotes.map((quoteObj) =>
+                        `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
+                    ).join('');
+
+                    suggestionDiv.innerHTML = `
+                        <div class="pain-point-text">${index + 1}. ${suggestion.featureName}</div>
+                        <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
+                            AI Summary:
+                        </div>
+                        <div style="margin: 8px 0; color: #333333; font-style: italic;">
+                            ${suggestion.aiSummary}
+                        </div>
+                        <div style="margin-top: 12px; font-size: 14px; font-weight: 500; color: #000000;">
+                            Quotes:
+                        </div>
+                        ${quotesHTML}
+                        <button class="btn-primary" onclick="createFeatureFromSuggestion('${suggestion.featureName.replace(/'/g, "\\'")}')" style="margin-top: 12px;">
+                            Create Feature
+                        </button>
+                    `;
+                    newFeatureSuggestionsDiv.appendChild(suggestionDiv);
+                });
+            } else {
+                newFeatureSuggestionsSection.style.display = 'none';
+            }
         }
 
         // Load and display features on the Features page
@@ -1518,6 +1598,51 @@
             } catch (error) {
                 console.error('Error adding features:', error);
                 alert('Failed to add features');
+            }
+        }
+
+        async function createFeatureFromSuggestion(featureName) {
+            if (!featureName) {
+                return;
+            }
+
+            try {
+                // Get existing features
+                const response = await fetch(`${API_BASE_URL}/api/features`);
+                const data = await response.json();
+
+                const existingFeatures = data.success && data.features
+                    ? data.features.map(f => f.feature_name)
+                    : [];
+
+                // Check if feature already exists
+                if (existingFeatures.includes(featureName)) {
+                    alert(`"${featureName}" already exists in your features list`);
+                    return;
+                }
+
+                // Add the new feature
+                const allFeatures = [...existingFeatures, featureName];
+
+                // Save all features
+                const saveResponse = await fetch(`${API_BASE_URL}/api/features`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        features: allFeatures
+                    })
+                });
+
+                if (saveResponse.ok) {
+                    alert(`Successfully added "${featureName}" to your features`);
+                } else {
+                    alert('Failed to create feature');
+                }
+            } catch (error) {
+                console.error('Error creating feature:', error);
+                alert('Failed to create feature');
             }
         }
 
