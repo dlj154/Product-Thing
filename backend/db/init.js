@@ -108,8 +108,15 @@ async function initDatabase() {
         transcript_id INTEGER REFERENCES transcripts(id) ON DELETE CASCADE,
         feature_name TEXT NOT NULL,
         ai_summary TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT NOW()
       )
+    `);
+
+    // Add status column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE transcript_feature_suggestions
+      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'
     `);
 
     // Create index for transcript_feature_suggestions

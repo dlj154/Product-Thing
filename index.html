@@ -1112,8 +1112,35 @@
                         `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
                     ).join('');
 
+                    // Build action buttons HTML based on status
+                    let actionHTML = '';
+                    if (suggestion.status === 'pending') {
+                        actionHTML = `
+                            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
+                                    Approve & Add to Features
+                                </button>
+                                <button onclick="ignoreSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
+                                    Ignore
+                                </button>
+                            </div>
+                        `;
+                    } else if (suggestion.status === 'approved') {
+                        actionHTML = `
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
+                                ✓ Approved and added to Features list
+                            </div>
+                        `;
+                    } else if (suggestion.status === 'ignored') {
+                        actionHTML = `
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #f5f5f5; color: #6b6b6b; border-radius: 4px; font-size: 13px;">
+                                Ignored
+                            </div>
+                        `;
+                    }
+
                     html += `
-                        <div class="pain-point">
+                        <div class="pain-point" id="suggestion-${suggestion.id}">
                             <div class="pain-point-text">${index + 1}. ${suggestion.featureName}</div>
                             <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
                                 AI Summary:
@@ -1125,9 +1152,7 @@
                                 Quotes:
                             </div>
                             ${quotesHTML}
-                            <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
-                                ✓ Added to your Features list
-                            </div>
+                            ${actionHTML}
                         </div>
                     `;
                 });
@@ -1299,11 +1324,39 @@
                 analysis.newFeatureSuggestions.forEach((suggestion, index) => {
                     const suggestionDiv = document.createElement('div');
                     suggestionDiv.className = 'pain-point';
+                    suggestionDiv.id = `suggestion-${suggestion.id}`;
 
                     // Build quotes HTML
                     const quotesHTML = suggestion.quotes.map((quoteObj) =>
                         `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
                     ).join('');
+
+                    // Build action buttons HTML based on status
+                    let actionHTML = '';
+                    if (suggestion.status === 'pending') {
+                        actionHTML = `
+                            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
+                                    Approve & Add to Features
+                                </button>
+                                <button onclick="ignoreSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
+                                    Ignore
+                                </button>
+                            </div>
+                        `;
+                    } else if (suggestion.status === 'approved') {
+                        actionHTML = `
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
+                                ✓ Approved and added to Features list
+                            </div>
+                        `;
+                    } else if (suggestion.status === 'ignored') {
+                        actionHTML = `
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #f5f5f5; color: #6b6b6b; border-radius: 4px; font-size: 13px;">
+                                Ignored
+                            </div>
+                        `;
+                    }
 
                     suggestionDiv.innerHTML = `
                         <div class="pain-point-text">${index + 1}. ${suggestion.featureName}</div>
@@ -1317,9 +1370,7 @@
                             Quotes:
                         </div>
                         ${quotesHTML}
-                        <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
-                            ✓ Automatically added to your Features list
-                        </div>
+                        ${actionHTML}
                     `;
                     newFeatureSuggestionsDiv.appendChild(suggestionDiv);
                 });
@@ -1727,6 +1778,87 @@
             resultsDiv.parentNode.insertBefore(errorDiv, resultsDiv);
 
             setTimeout(() => errorDiv.remove(), 8000);
+        }
+
+        // Approve a feature suggestion
+        async function approveSuggestion(suggestionId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts/suggestions/${suggestionId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId: 'default' })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to approve suggestion');
+                }
+
+                // Update the UI to show approved status
+                const suggestionDiv = document.getElementById(`suggestion-${suggestionId}`);
+                if (suggestionDiv) {
+                    const actionArea = suggestionDiv.querySelector('[style*="display: flex"]');
+                    if (actionArea) {
+                        actionArea.outerHTML = `
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
+                                ✓ Approved and added to Features list
+                            </div>
+                        `;
+                    }
+                }
+
+                // Reload features page if it's active
+                const featuresPage = document.getElementById('page-features');
+                if (featuresPage && featuresPage.classList.contains('active')) {
+                    await loadFeaturesPage();
+                }
+
+            } catch (error) {
+                console.error('Error approving suggestion:', error);
+                alert('Failed to approve suggestion. Please try again.');
+            }
+        }
+
+        // Ignore a feature suggestion
+        async function ignoreSuggestion(suggestionId) {
+            if (!confirm('Are you sure you want to ignore this feature suggestion?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts/suggestions/${suggestionId}/ignore`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to ignore suggestion');
+                }
+
+                // Update the UI to show ignored status
+                const suggestionDiv = document.getElementById(`suggestion-${suggestionId}`);
+                if (suggestionDiv) {
+                    const actionArea = suggestionDiv.querySelector('[style*="display: flex"]');
+                    if (actionArea) {
+                        actionArea.outerHTML = `
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #f5f5f5; color: #6b6b6b; border-radius: 4px; font-size: 13px;">
+                                Ignored
+                            </div>
+                        `;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error ignoring suggestion:', error);
+                alert('Failed to ignore suggestion. Please try again.');
+            }
         }
 
         // Initialize

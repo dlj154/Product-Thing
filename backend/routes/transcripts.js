@@ -4,7 +4,9 @@ const {
   saveTranscript,
   getTranscripts,
   getTranscriptById,
-  deleteTranscript
+  deleteTranscript,
+  approveSuggestion,
+  ignoreSuggestion
 } = require('../db/transcripts');
 
 /**
@@ -113,6 +115,62 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete transcript'
+    });
+  }
+});
+
+/**
+ * POST /api/transcripts/suggestions/:suggestionId/approve
+ * Approve a feature suggestion
+ */
+router.post('/suggestions/:suggestionId/approve', async (req, res) => {
+  try {
+    const suggestionId = parseInt(req.params.suggestionId);
+    const userId = req.body.userId || 'default';
+
+    await approveSuggestion(suggestionId, userId);
+
+    res.json({
+      success: true,
+      message: 'Feature suggestion approved and added to features list'
+    });
+  } catch (error) {
+    console.error('Error approving suggestion:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve suggestion',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/transcripts/suggestions/:suggestionId/ignore
+ * Ignore a feature suggestion
+ */
+router.post('/suggestions/:suggestionId/ignore', async (req, res) => {
+  try {
+    const suggestionId = parseInt(req.params.suggestionId);
+
+    const success = await ignoreSuggestion(suggestionId);
+
+    if (!success) {
+      return res.status(404).json({
+        success: false,
+        error: 'Suggestion not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Feature suggestion ignored'
+    });
+  } catch (error) {
+    console.error('Error ignoring suggestion:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to ignore suggestion',
+      message: error.message
     });
   }
 });

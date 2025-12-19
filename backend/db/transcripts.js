@@ -40,12 +40,12 @@ async function saveTranscript(userId, transcriptText, summary, features, newFeat
       }
     }
 
-    // Insert new feature suggestions
+    // Insert new feature suggestions with 'pending' status
     for (const suggestion of newFeatureSuggestions) {
-      // Insert the feature suggestion with AI summary
+      // Insert the feature suggestion with AI summary and 'pending' status
       const suggestionResult = await client.query(
-        'INSERT INTO transcript_feature_suggestions (transcript_id, feature_name, ai_summary) VALUES ($1, $2, $3) RETURNING id',
-        [transcriptId, suggestion.featureName, suggestion.aiSummary]
+        'INSERT INTO transcript_feature_suggestions (transcript_id, feature_name, ai_summary, status) VALUES ($1, $2, $3, $4) RETURNING id',
+        [transcriptId, suggestion.featureName, suggestion.aiSummary, 'pending']
       );
       const suggestionId = suggestionResult.rows[0].id;
 
@@ -57,18 +57,8 @@ async function saveTranscript(userId, transcriptText, summary, features, newFeat
         );
       }
 
-      // Also add the suggestion to the features table if it doesn't exist
-      const existingFeature = await client.query(
-        'SELECT id FROM features WHERE user_id = $1 AND feature_name = $2',
-        [userId, suggestion.featureName]
-      );
-
-      if (existingFeature.rows.length === 0) {
-        await client.query(
-          'INSERT INTO features (user_id, feature_name, description, is_suggestion) VALUES ($1, $2, $3, $4)',
-          [userId, suggestion.featureName, suggestion.aiSummary, true]
-        );
-      }
+      // NOTE: No longer automatically adding suggestions to features table
+      // User must explicitly approve each suggestion to add it to their features list
     }
 
     await client.query('COMMIT');
@@ -153,7 +143,7 @@ async function getTranscriptById(transcriptId) {
 
     // Get new feature suggestions for this transcript
     const suggestionsResult = await client.query(
-      'SELECT id, feature_name, ai_summary FROM transcript_feature_suggestions WHERE transcript_id = $1',
+      'SELECT id, feature_name, ai_summary, status FROM transcript_feature_suggestions WHERE transcript_id = $1',
       [transcriptId]
     );
 
@@ -184,8 +174,10 @@ async function getTranscriptById(transcriptId) {
 
     // Build new feature suggestions array
     const newFeatureSuggestions = suggestionsResult.rows.map(row => ({
+      id: row.id,
       featureName: row.feature_name,
       aiSummary: row.ai_summary,
+      status: row.status,
       quotes: suggestionQuotesMap[row.id] || []
     }));
 
@@ -209,9 +201,77 @@ async function deleteTranscript(transcriptId) {
   await pool.query('DELETE FROM transcripts WHERE id = $1', [transcriptId]);
 }
 
+/**
+ * Approve a feature suggestion - adds it to the features table and marks as approved
+ */
+async function approveSuggestion(suggestionId, userId = 'default') {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Get the suggestion details
+    const suggestionResult = await client.query(
+      'SELECT feature_name, ai_summary FROM transcript_feature_suggestions WHERE id = $1',
+      [suggestionId]
+    );
+
+    if (suggestionResult.rows.length === 0) {
+      throw new Error('Suggestion not found');
+    }
+
+    const { feature_name, ai_summary } = suggestionResult.rows[0];
+
+    // Check if feature already exists
+    const existingFeature = await client.query(
+      'SELECT id FROM features WHERE user_id = $1 AND feature_name = $2',
+      [userId, feature_name]
+    );
+
+    // Only add to features table if it doesn't already exist
+    if (existingFeature.rows.length === 0) {
+      await client.query(
+        'INSERT INTO features (user_id, feature_name, description, is_suggestion) VALUES ($1, $2, $3, $4)',
+        [userId, feature_name, ai_summary, true]
+      );
+    }
+
+    // Update suggestion status to 'approved'
+    await client.query(
+      'UPDATE transcript_feature_suggestions SET status = $1 WHERE id = $2',
+      ['approved', suggestionId]
+    );
+
+    await client.query('COMMIT');
+    return true;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Ignore a feature suggestion - marks it as ignored
+ */
+async function ignoreSuggestion(suggestionId) {
+  try {
+    const result = await pool.query(
+      'UPDATE transcript_feature_suggestions SET status = $1 WHERE id = $2',
+      ['ignored', suggestionId]
+    );
+    return result.rowCount > 0;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   saveTranscript,
   getTranscripts,
   getTranscriptById,
-  deleteTranscript
+  deleteTranscript,
+  approveSuggestion,
+  ignoreSuggestion
 };
