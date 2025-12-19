@@ -267,11 +267,114 @@ async function ignoreSuggestion(suggestionId) {
   }
 }
 
+/**
+ * Get suggestion history for a feature name across all transcripts
+ * Returns aggregated metrics and all instances of this suggestion
+ */
+async function getSuggestionHistory(featureName, userId = 'default') {
+  try {
+    const result = await pool.query(`
+      SELECT
+        tfs.id,
+        tfs.transcript_id,
+        tfs.feature_name,
+        tfs.ai_summary,
+        tfs.status,
+        tfs.created_at,
+        t.summary as transcript_summary,
+        COUNT(fsq.id) as quote_count
+      FROM transcript_feature_suggestions tfs
+      JOIN transcripts t ON tfs.transcript_id = t.id
+      LEFT JOIN feature_suggestion_quotes fsq ON tfs.id = fsq.suggestion_id
+      WHERE tfs.feature_name = $1 AND t.user_id = $2
+      GROUP BY tfs.id, tfs.transcript_id, tfs.feature_name, tfs.ai_summary, tfs.status, tfs.created_at, t.summary
+      ORDER BY tfs.created_at DESC
+    `, [featureName, userId]);
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const instances = result.rows;
+    const totalTranscripts = instances.length;
+    const totalPainPoints = instances.reduce((sum, row) => sum + parseInt(row.quote_count), 0);
+    const statusCounts = {
+      pending: instances.filter(i => i.status === 'pending').length,
+      approved: instances.filter(i => i.status === 'approved').length,
+      ignored: instances.filter(i => i.status === 'ignored').length
+    };
+
+    return {
+      featureName,
+      totalTranscripts,
+      totalPainPoints,
+      statusCounts,
+      instances: instances.map(row => ({
+        id: row.id,
+        transcriptId: row.transcript_id,
+        transcriptSummary: row.transcript_summary,
+        aiSummary: row.ai_summary,
+        status: row.status,
+        quoteCount: parseInt(row.quote_count),
+        createdAt: row.created_at
+      }))
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Get enriched suggestions with history for a transcript
+ * Adds metadata about previous suggestions across other transcripts
+ */
+async function getTranscriptByIdWithHistory(transcriptId, userId = 'default') {
+  const transcript = await getTranscriptById(transcriptId);
+
+  if (!transcript) {
+    return null;
+  }
+
+  // Enrich each suggestion with history
+  const enrichedSuggestions = await Promise.all(
+    transcript.newFeatureSuggestions.map(async (suggestion) => {
+      const history = await getSuggestionHistory(suggestion.featureName, userId);
+
+      // Calculate history excluding current transcript
+      const otherInstances = history.instances.filter(i => i.transcriptId !== transcriptId);
+      const previouslyIgnored = otherInstances.some(i => i.status === 'ignored');
+      const previouslyApproved = otherInstances.some(i => i.status === 'approved');
+      const otherTranscriptCount = otherInstances.length;
+      const otherPainPointCount = otherInstances.reduce((sum, i) => sum + i.quoteCount, 0);
+
+      return {
+        ...suggestion,
+        history: {
+          appearedInOtherTranscripts: otherTranscriptCount > 0,
+          otherTranscriptCount,
+          otherPainPointCount,
+          previouslyIgnored,
+          previouslyApproved,
+          totalAcrossAllTranscripts: history.totalTranscripts,
+          totalPainPointsAcrossAll: history.totalPainPoints
+        }
+      };
+    })
+  );
+
+  return {
+    ...transcript,
+    newFeatureSuggestions: enrichedSuggestions
+  };
+}
+
 module.exports = {
   saveTranscript,
   getTranscripts,
   getTranscriptById,
   deleteTranscript,
   approveSuggestion,
-  ignoreSuggestion
+  ignoreSuggestion,
+  getSuggestionHistory,
+  getTranscriptByIdWithHistory
 };

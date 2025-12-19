@@ -6,7 +6,9 @@ const {
   getTranscriptById,
   deleteTranscript,
   approveSuggestion,
-  ignoreSuggestion
+  ignoreSuggestion,
+  getSuggestionHistory,
+  getTranscriptByIdWithHistory
 } = require('../db/transcripts');
 
 /**
@@ -34,11 +36,20 @@ router.get('/', async (req, res) => {
 /**
  * GET /api/transcripts/:id
  * Get a specific transcript with all details
+ * Add ?withHistory=true to include suggestion history across all transcripts
  */
 router.get('/:id', async (req, res) => {
   try {
     const transcriptId = parseInt(req.params.id);
-    const transcript = await getTranscriptById(transcriptId);
+    const userId = req.query.userId || 'default';
+    const withHistory = req.query.withHistory === 'true';
+
+    let transcript;
+    if (withHistory) {
+      transcript = await getTranscriptByIdWithHistory(transcriptId, userId);
+    } else {
+      transcript = await getTranscriptById(transcriptId);
+    }
 
     if (!transcript) {
       return res.status(404).json({
@@ -170,6 +181,38 @@ router.post('/suggestions/:suggestionId/ignore', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to ignore suggestion',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/transcripts/suggestions/history/:featureName
+ * Get suggestion history for a feature name across all transcripts
+ */
+router.get('/suggestions/history/:featureName', async (req, res) => {
+  try {
+    const featureName = decodeURIComponent(req.params.featureName);
+    const userId = req.query.userId || 'default';
+
+    const history = await getSuggestionHistory(featureName, userId);
+
+    if (!history) {
+      return res.status(404).json({
+        success: false,
+        error: 'No suggestions found for this feature'
+      });
+    }
+
+    res.json({
+      success: true,
+      history
+    });
+  } catch (error) {
+    console.error('Error fetching suggestion history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch suggestion history',
       message: error.message
     });
   }
