@@ -8,7 +8,7 @@ const pool = require('./pool');
 async function getFeatures(userId = 'default') {
   try {
     const result = await pool.query(
-      'SELECT id, feature_name, description, created_at, updated_at FROM features WHERE user_id = $1 ORDER BY id ASC',
+      'SELECT id, feature_name, description, is_suggestion, created_at, updated_at FROM features WHERE user_id = $1 ORDER BY id ASC',
       [userId]
     );
     return result.rows;
@@ -47,19 +47,19 @@ async function saveFeatures(userId = 'default', features) {
   try {
     await client.query('BEGIN');
 
-    // Delete existing features for this user
-    await client.query('DELETE FROM features WHERE user_id = $1', [userId]);
+    // Delete existing user-defined features for this user (keep AI suggestions)
+    await client.query('DELETE FROM features WHERE user_id = $1 AND (is_suggestion = FALSE OR is_suggestion IS NULL)', [userId]);
 
     // Insert new features
     if (features && features.length > 0) {
       const values = features.map((feature, index) =>
-        `($1, $${index + 2})`
+        `($1, $${index + 2}, FALSE)`
       ).join(', ');
 
       const params = [userId, ...features];
 
       await client.query(
-        `INSERT INTO features (user_id, feature_name) VALUES ${values}`,
+        `INSERT INTO features (user_id, feature_name, is_suggestion) VALUES ${values}`,
         params
       );
     }
@@ -103,7 +103,7 @@ async function getFeatureDetails(featureName, userId = 'default') {
   try {
     // Get feature details
     const featureResult = await pool.query(
-      'SELECT id, feature_name, description FROM features WHERE feature_name = $1 AND user_id = $2',
+      'SELECT id, feature_name, description, is_suggestion FROM features WHERE feature_name = $1 AND user_id = $2',
       [featureName, userId]
     );
 
@@ -237,6 +237,7 @@ async function getAllFeaturesWithCounts(userId = 'default') {
         f.id,
         f.feature_name,
         f.description,
+        f.is_suggestion,
         f.created_at,
         f.updated_at,
         COUNT(DISTINCT pp.transcript_id) as pain_point_count
@@ -244,7 +245,7 @@ async function getAllFeaturesWithCounts(userId = 'default') {
       LEFT JOIN feature_mappings fm ON f.feature_name = fm.feature_name
       LEFT JOIN pain_points pp ON fm.pain_point_id = pp.id
       WHERE f.user_id = $1
-      GROUP BY f.id, f.feature_name, f.description, f.created_at, f.updated_at
+      GROUP BY f.id, f.feature_name, f.description, f.is_suggestion, f.created_at, f.updated_at
       ORDER BY pain_point_count DESC, f.id ASC
     `, [userId]);
 
@@ -252,6 +253,7 @@ async function getAllFeaturesWithCounts(userId = 'default') {
       id: row.id,
       feature_name: row.feature_name,
       description: row.description,
+      is_suggestion: row.is_suggestion,
       painPointCount: parseInt(row.pain_point_count) || 0,
       created_at: row.created_at,
       updated_at: row.updated_at

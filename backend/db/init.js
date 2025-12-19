@@ -22,6 +22,12 @@ async function initDatabase() {
       ADD COLUMN IF NOT EXISTS description TEXT
     `);
 
+    // Add is_suggestion column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE features
+      ADD COLUMN IF NOT EXISTS is_suggestion BOOLEAN DEFAULT FALSE
+    `);
+
     // Create index for faster queries
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_features_user_id
@@ -93,6 +99,40 @@ async function initDatabase() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_transcript_feature_summaries_transcript_id
       ON transcript_feature_summaries(transcript_id)
+    `);
+
+    // Create transcript_feature_suggestions table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS transcript_feature_suggestions (
+        id SERIAL PRIMARY KEY,
+        transcript_id INTEGER REFERENCES transcripts(id) ON DELETE CASCADE,
+        feature_name TEXT NOT NULL,
+        ai_summary TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Create index for transcript_feature_suggestions
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_transcript_feature_suggestions_transcript_id
+      ON transcript_feature_suggestions(transcript_id)
+    `);
+
+    // Create feature_suggestion_quotes table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS feature_suggestion_quotes (
+        id SERIAL PRIMARY KEY,
+        suggestion_id INTEGER REFERENCES transcript_feature_suggestions(id) ON DELETE CASCADE,
+        quote TEXT NOT NULL,
+        pain_point TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Create index for feature_suggestion_quotes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_feature_suggestion_quotes_suggestion_id
+      ON feature_suggestion_quotes(suggestion_id)
     `);
 
     console.log('✓ Database schema initialized successfully');
