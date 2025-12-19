@@ -1122,29 +1122,18 @@
 
                     // Build action buttons HTML based on status
                     let actionHTML = '';
-                    if (suggestion.status === 'pending') {
-                        actionHTML = `
-                            <div style="margin-top: 12px; display: flex; gap: 8px;">
-                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
-                                    Approve & Add to Features
-                                </button>
-                                <button onclick="ignoreSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
-                                    Ignore
-                                </button>
-                            </div>
-                        `;
-                    } else if (suggestion.status === 'approved') {
+                    if (suggestion.status === 'approved') {
                         actionHTML = `
                             <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
                                 ✓ Approved and added to Features list
                             </div>
                         `;
-                    } else if (suggestion.status === 'ignored') {
+                    } else {
+                        // For ignored (default) status, show approve button
                         actionHTML = `
-                            <div style="margin-top: 12px; padding: 8px 12px; background: #f5f5f5; color: #6b6b6b; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
-                                <span>Ignored</span>
-                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 6px 12px; font-size: 12px;">
-                                    Reconsider & Approve
+                            <div style="margin-top: 12px;">
+                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
+                                    Approve & Add to Features
                                 </button>
                             </div>
                         `;
@@ -1381,29 +1370,18 @@
 
                     // Build action buttons HTML based on status
                     let actionHTML = '';
-                    if (suggestion.status === 'pending') {
-                        actionHTML = `
-                            <div style="margin-top: 12px; display: flex; gap: 8px;">
-                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
-                                    Approve & Add to Features
-                                </button>
-                                <button onclick="ignoreSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
-                                    Ignore
-                                </button>
-                            </div>
-                        `;
-                    } else if (suggestion.status === 'approved') {
+                    if (suggestion.status === 'approved') {
                         actionHTML = `
                             <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
                                 ✓ Approved and added to Features list
                             </div>
                         `;
-                    } else if (suggestion.status === 'ignored') {
+                    } else {
+                        // For ignored (default) status, show approve button
                         actionHTML = `
-                            <div style="margin-top: 12px; padding: 8px 12px; background: #f5f5f5; color: #6b6b6b; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
-                                <span>Ignored</span>
-                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 6px 12px; font-size: 12px;">
-                                    Reconsider & Approve
+                            <div style="margin-top: 12px;">
+                                <button class="btn-primary" onclick="approveSuggestion(${suggestion.id})" style="margin: 0; padding: 8px 16px; font-size: 13px;">
+                                    Approve & Add to Features
                                 </button>
                             </div>
                         `;
@@ -1853,8 +1831,9 @@
                 // Update the UI to show approved status
                 const suggestionDiv = document.getElementById(`suggestion-${suggestionId}`);
                 if (suggestionDiv) {
-                    const actionArea = suggestionDiv.querySelector('[style*="display: flex"]');
-                    if (actionArea) {
+                    // Find the action area (could be a button container or ignored status)
+                    const actionArea = suggestionDiv.querySelector('[style*="margin-top: 12px"]');
+                    if (actionArea && actionArea.querySelector('button')) {
                         actionArea.outerHTML = `
                             <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
                                 ✓ Approved and added to Features list

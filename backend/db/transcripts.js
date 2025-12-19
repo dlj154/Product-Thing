@@ -40,12 +40,13 @@ async function saveTranscript(userId, transcriptText, summary, features, newFeat
       }
     }
 
-    // Insert new feature suggestions with 'pending' status
+    // Insert new feature suggestions with 'ignored' status by default
+    // User must explicitly approve to add them to the features list
     for (const suggestion of newFeatureSuggestions) {
-      // Insert the feature suggestion with AI summary and 'pending' status
+      // Insert the feature suggestion with AI summary and 'ignored' status (default)
       const suggestionResult = await client.query(
         'INSERT INTO transcript_feature_suggestions (transcript_id, feature_name, ai_summary, status) VALUES ($1, $2, $3, $4) RETURNING id',
-        [transcriptId, suggestion.featureName, suggestion.aiSummary, 'pending']
+        [transcriptId, suggestion.featureName, suggestion.aiSummary, 'ignored']
       );
       const suggestionId = suggestionResult.rows[0].id;
 
