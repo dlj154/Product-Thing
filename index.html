@@ -1235,11 +1235,31 @@
                 const summary = transcript.substring(0, 60) + (transcript.length > 60 ? '...' : '');
 
                 // Save to database
-                await saveTranscriptToDatabase(transcript, summary, analysis.features, analysis.newFeatureSuggestions);
+                const transcriptId = await saveTranscriptToDatabase(transcript, summary, analysis.features, analysis.newFeatureSuggestions);
 
-                // Display results
-                currentAnalysis = analysis;
-                displayResults(analysis);
+                // Fetch the saved transcript from database to get suggestion IDs and status
+                if (transcriptId) {
+                    const transcriptResponse = await fetch(`${API_BASE_URL}/api/transcripts/${transcriptId}`);
+                    if (transcriptResponse.ok) {
+                        const transcriptData = await transcriptResponse.json();
+                        if (transcriptData.success) {
+                            currentAnalysis = transcriptData.transcript;
+                            displayResults(transcriptData.transcript);
+                        } else {
+                            // Fallback to original analysis if fetch fails
+                            currentAnalysis = analysis;
+                            displayResults(analysis);
+                        }
+                    } else {
+                        // Fallback to original analysis if fetch fails
+                        currentAnalysis = analysis;
+                        displayResults(analysis);
+                    }
+                } else {
+                    // Fallback to original analysis if save failed
+                    currentAnalysis = analysis;
+                    displayResults(analysis);
+                }
 
                 // Clear transcript field
                 document.getElementById('transcript').value = '';
@@ -1285,7 +1305,7 @@
 
         async function saveTranscriptToDatabase(transcriptText, summary, features, newFeatureSuggestions) {
             try {
-                await fetch(`${API_BASE_URL}/api/transcripts`, {
+                const response = await fetch(`${API_BASE_URL}/api/transcripts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1297,8 +1317,15 @@
                         newFeatureSuggestions
                     })
                 });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.transcriptId; // Return the ID of the saved transcript
+                }
+                return null;
             } catch (error) {
                 console.log('Could not save to database (not configured)');
+                return null;
             }
         }
 
@@ -1367,8 +1394,33 @@
                         `<div class="quote">${formatQuoteWithLineBreaks(quoteObj.quote)}</div>`
                     ).join('');
 
+                    const painPointsLabel = (suggestion.painPointsCount && suggestion.painPointsCount > 1)
+                        ? `Pain Points: ${suggestion.painPointsCount}`
+                        : `Pain Points: 1`;
+
+                    const approvalButton = suggestion.status === 'approved'
+                        ? `<div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px; display: inline-block;">
+                            ✓ Approved
+                           </div>`
+                        : (suggestion.id
+                            ? `<button
+                                onclick="approveSuggestion(${suggestion.id}, '${suggestion.featureName}')"
+                                id="approve-btn-${suggestion.id}"
+                                style="margin-top: 12px; padding: 8px 16px; background: #1976d2; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">
+                                Approve
+                               </button>`
+                            : `<div style="margin-top: 12px; padding: 8px 12px; background: #fff3e0; color: #e65100; border-radius: 4px; font-size: 13px;">
+                                Pending approval
+                               </div>`
+                        );
+
                     suggestionDiv.innerHTML = `
-                        <div class="pain-point-text">${index + 1}. ${suggestion.featureName}</div>
+                        <div class="pain-point-text">
+                            ${index + 1}. ${suggestion.featureName}
+                            ${suggestion.painPointsCount ? `<span style="margin-left: 12px; font-size: 12px; padding: 4px 8px; background: #fff3e0; color: #e65100; border-radius: 3px;">
+                                ${painPointsLabel}
+                            </span>` : ''}
+                        </div>
                         <div style="margin-top: 8px; font-size: 14px; font-weight: 500; color: #000000;">
                             AI Summary:
                         </div>
@@ -1379,9 +1431,7 @@
                             Quotes:
                         </div>
                         ${quotesHTML}
-                        <div style="margin-top: 12px; padding: 8px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 13px;">
-                            ✓ Automatically added to your Features list
-                        </div>
+                        ${approvalButton}
                     `;
                     newFeatureSuggestionsDiv.appendChild(suggestionDiv);
                 });
