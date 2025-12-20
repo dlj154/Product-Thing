@@ -135,6 +135,18 @@ async function initDatabase() {
       ON feature_suggestion_quotes(suggestion_id)
     `);
 
+    // Add status column to transcript_feature_suggestions (for approval workflow)
+    await pool.query(`
+      ALTER TABLE transcript_feature_suggestions
+      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'
+    `);
+
+    // Add pain_points_count column to transcript_feature_suggestions (tracks recurrence)
+    await pool.query(`
+      ALTER TABLE transcript_feature_suggestions
+      ADD COLUMN IF NOT EXISTS pain_points_count INTEGER DEFAULT 1
+    `);
+
     console.log('✓ Database schema initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);

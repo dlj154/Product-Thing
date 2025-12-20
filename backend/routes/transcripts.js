@@ -4,7 +4,8 @@ const {
   saveTranscript,
   getTranscripts,
   getTranscriptById,
-  deleteTranscript
+  deleteTranscript,
+  approveSuggestion
 } = require('../db/transcripts');
 
 /**
@@ -113,6 +114,30 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete transcript'
+    });
+  }
+});
+
+/**
+ * POST /api/transcripts/suggestions/:id/approve
+ * Approve a feature suggestion
+ */
+router.post('/suggestions/:id/approve', async (req, res) => {
+  try {
+    const suggestionId = parseInt(req.params.id);
+    const userId = req.body.userId || 'default';
+
+    await approveSuggestion(suggestionId, userId);
+
+    res.json({
+      success: true,
+      message: 'Suggestion approved'
+    });
+  } catch (error) {
+    console.error('Error approving suggestion:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve suggestion'
     });
   }
 });
