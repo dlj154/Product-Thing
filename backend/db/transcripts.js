@@ -227,9 +227,9 @@ async function approveSuggestion(suggestionId, userId) {
   try {
     await client.query('BEGIN');
 
-    // Get the suggestion details
+    // Get the suggestion details including transcript_id and pain_points_count
     const suggestionResult = await client.query(
-      'SELECT feature_name, ai_summary FROM transcript_feature_suggestions WHERE id = $1',
+      'SELECT feature_name, ai_summary, transcript_id, pain_points_count FROM transcript_feature_suggestions WHERE id = $1',
       [suggestionId]
     );
 
@@ -237,7 +237,13 @@ async function approveSuggestion(suggestionId, userId) {
       throw new Error('Suggestion not found');
     }
 
-    const { feature_name, ai_summary } = suggestionResult.rows[0];
+    const { feature_name, ai_summary, transcript_id, pain_points_count } = suggestionResult.rows[0];
+
+    // Get all quotes for this suggestion
+    const quotesResult = await client.query(
+      'SELECT quote, pain_point FROM feature_suggestion_quotes WHERE suggestion_id = $1',
+      [suggestionId]
+    );
 
     // Update the suggestion status to approved
     await client.query(
@@ -255,6 +261,22 @@ async function approveSuggestion(suggestionId, userId) {
       await client.query(
         'INSERT INTO features (user_id, feature_name, description, is_suggestion) VALUES ($1, $2, $3, $4)',
         [userId, feature_name, ai_summary, true]
+      );
+    }
+
+    // Transfer pain points and quotes to the feature
+    for (const quoteRow of quotesResult.rows) {
+      // Create a pain_point entry linked to the original transcript
+      const painPointResult = await client.query(
+        'INSERT INTO pain_points (transcript_id, pain_point, quote) VALUES ($1, $2, $3) RETURNING id',
+        [transcript_id, quoteRow.pain_point, quoteRow.quote]
+      );
+      const painPointId = painPointResult.rows[0].id;
+
+      // Create feature_mapping to link the pain_point to the new feature
+      await client.query(
+        'INSERT INTO feature_mappings (pain_point_id, feature_name) VALUES ($1, $2)',
+        [painPointId, feature_name]
       );
     }
 
