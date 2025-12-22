@@ -260,7 +260,7 @@ async function approveSuggestion(suggestionId, userId) {
     if (existingFeature.rows.length === 0) {
       await client.query(
         'INSERT INTO features (user_id, feature_name, description, is_suggestion) VALUES ($1, $2, $3, $4)',
-        [userId, feature_name, ai_summary, true]
+        [userId, feature_name, ai_summary, false]
       );
     }
 

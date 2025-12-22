@@ -147,6 +147,19 @@ async function initDatabase() {
       ADD COLUMN IF NOT EXISTS pain_points_count INTEGER DEFAULT 1
     `);
 
+    // Fix approved feature suggestions that were incorrectly marked as is_suggestion=TRUE
+    // These should be regular features (is_suggestion=FALSE) since they were approved
+    await pool.query(`
+      UPDATE features f
+      SET is_suggestion = FALSE
+      WHERE f.is_suggestion = TRUE
+      AND EXISTS (
+        SELECT 1 FROM transcript_feature_suggestions tfs
+        WHERE tfs.feature_name = f.feature_name
+        AND tfs.status = 'approved'
+      )
+    `);
+
     console.log('✓ Database schema initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
