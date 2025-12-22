@@ -1586,17 +1586,24 @@
                 return;
             }
 
+            // Filter out suggestions (archived features) - only show approved features
+            const approvedFeatures = features.filter(f => !f.is_suggestion);
+
+            if (approvedFeatures.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="2" style="text-align: center; color: #6b6b6b; padding: 20px;">No features available yet</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+
             // Sort features by pain point count (descending)
-            const sortedFeatures = [...features].sort((a, b) => b.painPointCount - a.painPointCount);
+            const sortedFeatures = [...approvedFeatures].sort((a, b) => b.painPointCount - a.painPointCount);
 
             sortedFeatures.forEach(feature => {
                 const row = document.createElement('tr');
                 row.onclick = () => openFeatureDrawer(feature.feature_name);
-                const suggestionBadge = feature.is_suggestion
-                    ? '<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px; font-weight: 600;">AI Suggested</span>'
-                    : '';
                 row.innerHTML = `
-                    <td class="feature-title-cell">${feature.feature_name}${suggestionBadge}</td>
+                    <td class="feature-title-cell">${feature.feature_name}</td>
                     <td class="pain-points-cell">
                         <span class="pain-points-badge">${feature.painPointCount || 0}</span>
                     </td>
