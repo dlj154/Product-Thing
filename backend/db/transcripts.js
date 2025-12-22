@@ -40,41 +40,57 @@ async function saveTranscript(userId, transcriptText, summary, features, newFeat
       }
     }
 
-    // Insert new feature suggestions with pain point tracking
+    // Insert new feature suggestions directly into features table with 'pending' status
     for (const suggestion of newFeatureSuggestions) {
-      // Check if similar suggestion exists in previous transcripts (pending status only)
+      // Check if similar pending suggestion already exists for this user
       const similarSuggestions = await client.query(`
-        SELECT tfs.id, tfs.pain_points_count
-        FROM transcript_feature_suggestions tfs
-        JOIN transcripts t ON tfs.transcript_id = t.id
-        WHERE t.user_id = $1
-        AND LOWER(tfs.feature_name) = LOWER($2)
-        AND tfs.status = 'pending'
-        ORDER BY tfs.created_at DESC
+        SELECT id, pain_points_count
+        FROM features
+        WHERE user_id = $1
+        AND LOWER(feature_name) = LOWER($2)
+        AND status = 'pending'
+        ORDER BY created_at DESC
         LIMIT 1
       `, [userId, suggestion.featureName]);
 
-      // Calculate pain points count (existing count + 1, or 1 if first occurrence)
-      const painPointsCount = similarSuggestions.rows.length > 0
-        ? similarSuggestions.rows[0].pain_points_count + 1
-        : 1;
+      let featureId;
+      let painPointsCount;
 
-      // Insert the feature suggestion with AI summary and pain points count
-      const suggestionResult = await client.query(
-        'INSERT INTO transcript_feature_suggestions (transcript_id, feature_name, ai_summary, status, pain_points_count) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-        [transcriptId, suggestion.featureName, suggestion.aiSummary, 'pending', painPointsCount]
-      );
-      const suggestionId = suggestionResult.rows[0].id;
+      if (similarSuggestions.rows.length > 0) {
+        // Update existing pending suggestion with incremented count
+        const existingId = similarSuggestions.rows[0].id;
+        painPointsCount = similarSuggestions.rows[0].pain_points_count + 1;
 
-      // Insert quotes for this suggestion
-      for (const quoteObj of suggestion.quotes) {
-        await client.query(
-          'INSERT INTO feature_suggestion_quotes (suggestion_id, quote, pain_point) VALUES ($1, $2, $3)',
-          [suggestionId, quoteObj.quote, quoteObj.painPoint]
+        const updateResult = await client.query(
+          'UPDATE features SET pain_points_count = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
+          [painPointsCount, existingId]
         );
+        featureId = updateResult.rows[0].id;
+      } else {
+        // Insert new pending feature suggestion
+        painPointsCount = 1;
+
+        const insertResult = await client.query(
+          'INSERT INTO features (user_id, feature_name, description, status, is_suggestion, transcript_id, pain_points_count) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+          [userId, suggestion.featureName, suggestion.aiSummary, 'pending', true, transcriptId, painPointsCount]
+        );
+        featureId = insertResult.rows[0].id;
       }
 
-      // Do NOT automatically add to features table - wait for approval
+      // Insert pain points and feature mappings for each quote
+      for (const quoteObj of suggestion.quotes) {
+        const painPointResult = await client.query(
+          'INSERT INTO pain_points (transcript_id, pain_point, quote) VALUES ($1, $2, $3) RETURNING id',
+          [transcriptId, quoteObj.painPoint, quoteObj.quote]
+        );
+        const painPointId = painPointResult.rows[0].id;
+
+        // Insert feature mapping
+        await client.query(
+          'INSERT INTO feature_mappings (pain_point_id, feature_name) VALUES ($1, $2)',
+          [painPointId, suggestion.featureName]
+        );
+      }
     }
 
     await client.query('COMMIT');
@@ -157,32 +173,33 @@ async function getTranscriptById(transcriptId) {
       });
     });
 
-    // Get new feature suggestions for this transcript
+    // Get new feature suggestions for this transcript (pending features linked to this transcript)
     const suggestionsResult = await client.query(
-      'SELECT id, feature_name, ai_summary, status, pain_points_count FROM transcript_feature_suggestions WHERE transcript_id = $1',
-      [transcriptId]
+      'SELECT id, feature_name, description, status, pain_points_count FROM features WHERE transcript_id = $1 AND status = $2',
+      [transcriptId, 'pending']
     );
 
-    // Get quotes for all suggestions
-    const suggestionIds = suggestionsResult.rows.map(row => row.id);
+    // Get quotes/pain points for all suggestions via feature_mappings
+    const suggestionNames = suggestionsResult.rows.map(row => row.feature_name);
     let suggestionQuotesResult = { rows: [] };
 
-    if (suggestionIds.length > 0) {
+    if (suggestionNames.length > 0) {
       suggestionQuotesResult = await client.query(`
-        SELECT suggestion_id, quote, pain_point
-        FROM feature_suggestion_quotes
-        WHERE suggestion_id = ANY($1)
-        ORDER BY suggestion_id, id
-      `, [suggestionIds]);
+        SELECT fm.feature_name, pp.quote, pp.pain_point
+        FROM feature_mappings fm
+        JOIN pain_points pp ON fm.pain_point_id = pp.id
+        WHERE fm.feature_name = ANY($1) AND pp.transcript_id = $2
+        ORDER BY fm.feature_name, pp.id
+      `, [suggestionNames, transcriptId]);
     }
 
-    // Build a map of suggestion_id to quotes
+    // Build a map of feature_name to quotes
     const suggestionQuotesMap = {};
     suggestionQuotesResult.rows.forEach(row => {
-      if (!suggestionQuotesMap[row.suggestion_id]) {
-        suggestionQuotesMap[row.suggestion_id] = [];
+      if (!suggestionQuotesMap[row.feature_name]) {
+        suggestionQuotesMap[row.feature_name] = [];
       }
-      suggestionQuotesMap[row.suggestion_id].push({
+      suggestionQuotesMap[row.feature_name].push({
         quote: row.quote,
         painPoint: row.pain_point
       });
@@ -192,10 +209,10 @@ async function getTranscriptById(transcriptId) {
     const newFeatureSuggestions = suggestionsResult.rows.map(row => ({
       id: row.id,
       featureName: row.feature_name,
-      aiSummary: row.ai_summary,
+      aiSummary: row.description,
       status: row.status,
       painPointsCount: row.pain_points_count,
-      quotes: suggestionQuotesMap[row.id] || []
+      quotes: suggestionQuotesMap[row.feature_name] || []
     }));
 
     return {
@@ -219,7 +236,7 @@ async function deleteTranscript(transcriptId) {
 }
 
 /**
- * Approve a feature suggestion and add it to the features list
+ * Approve a feature suggestion (change status from 'pending' to 'active')
  */
 async function approveSuggestion(suggestionId, userId) {
   const client = await pool.connect();
@@ -227,57 +244,14 @@ async function approveSuggestion(suggestionId, userId) {
   try {
     await client.query('BEGIN');
 
-    // Get the suggestion details including transcript_id and pain_points_count
-    const suggestionResult = await client.query(
-      'SELECT feature_name, ai_summary, transcript_id, pain_points_count FROM transcript_feature_suggestions WHERE id = $1',
-      [suggestionId]
+    // Update the feature status from 'pending' to 'active'
+    const result = await client.query(
+      'UPDATE features SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 AND status = $4 RETURNING *',
+      ['active', suggestionId, userId, 'pending']
     );
 
-    if (suggestionResult.rows.length === 0) {
-      throw new Error('Suggestion not found');
-    }
-
-    const { feature_name, ai_summary, transcript_id, pain_points_count } = suggestionResult.rows[0];
-
-    // Get all quotes for this suggestion
-    const quotesResult = await client.query(
-      'SELECT quote, pain_point FROM feature_suggestion_quotes WHERE suggestion_id = $1',
-      [suggestionId]
-    );
-
-    // Update the suggestion status to approved
-    await client.query(
-      'UPDATE transcript_feature_suggestions SET status = $1 WHERE id = $2',
-      ['approved', suggestionId]
-    );
-
-    // Add to features table if it doesn't exist
-    const existingFeature = await client.query(
-      'SELECT id FROM features WHERE user_id = $1 AND feature_name = $2',
-      [userId, feature_name]
-    );
-
-    if (existingFeature.rows.length === 0) {
-      await client.query(
-        'INSERT INTO features (user_id, feature_name, description, is_suggestion) VALUES ($1, $2, $3, $4)',
-        [userId, feature_name, ai_summary, true]
-      );
-    }
-
-    // Transfer pain points and quotes to the feature
-    for (const quoteRow of quotesResult.rows) {
-      // Create a pain_point entry linked to the original transcript
-      const painPointResult = await client.query(
-        'INSERT INTO pain_points (transcript_id, pain_point, quote) VALUES ($1, $2, $3) RETURNING id',
-        [transcript_id, quoteRow.pain_point, quoteRow.quote]
-      );
-      const painPointId = painPointResult.rows[0].id;
-
-      // Create feature_mapping to link the pain_point to the new feature
-      await client.query(
-        'INSERT INTO feature_mappings (pain_point_id, feature_name) VALUES ($1, $2)',
-        [painPointId, feature_name]
-      );
+    if (result.rows.length === 0) {
+      throw new Error('Suggestion not found or already approved');
     }
 
     await client.query('COMMIT');
