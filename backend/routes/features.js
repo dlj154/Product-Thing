@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getFeatures, getFeatureNames, saveFeatures, deleteFeatures, getFeatureDetails, updateFeature, deleteFeatureMapping, getAllFeaturesWithCounts } = require('../db/features');
+const { getFeatures, getFeatureNames, saveFeatures, deleteFeatures, getFeatureDetails, updateFeature, deleteFeatureMapping, getAllFeaturesWithCounts, archiveFeature, deleteFeatureById } = require('../db/features');
 
 /**
  * GET /api/features
@@ -173,6 +173,64 @@ router.put('/:featureId', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update feature',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/features/:featureId/archive
+ * Archive a feature (convert it back to a new feature suggestion)
+ */
+router.post('/:featureId/archive', async (req, res) => {
+  try {
+    const featureId = parseInt(req.params.featureId);
+    const { userId = 'default' } = req.body;
+
+    const archivedFeature = await archiveFeature(featureId, userId);
+
+    res.json({
+      success: true,
+      message: 'Feature archived successfully',
+      feature: archivedFeature
+    });
+  } catch (error) {
+    console.error('Error archiving feature:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to archive feature',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/features/:featureId
+ * Delete a single feature and all its mappings
+ */
+router.delete('/:featureId', async (req, res) => {
+  try {
+    const featureId = parseInt(req.params.featureId);
+    const userId = req.query.userId || 'default';
+
+    const success = await deleteFeatureById(featureId, userId);
+
+    if (!success) {
+      return res.status(404).json({
+        success: false,
+        error: 'Feature not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Feature deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting feature:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete feature',
       message: error.message
     });
   }

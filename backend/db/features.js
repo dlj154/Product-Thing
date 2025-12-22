@@ -264,6 +264,84 @@ async function getAllFeaturesWithCounts(userId = 'default') {
   }
 }
 
+/**
+ * Archive a feature (convert it back to a new feature suggestion)
+ * @param {number} featureId - Feature ID
+ * @param {string} userId - User identifier
+ * @returns {Promise<Object>} Archived feature
+ */
+async function archiveFeature(featureId, userId = 'default') {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Update the feature to be a suggestion
+    const result = await client.query(
+      'UPDATE features SET is_suggestion = TRUE, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
+      [featureId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Feature not found');
+    }
+
+    await client.query('COMMIT');
+    return result.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error archiving feature:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Delete a single feature and all its mappings
+ * @param {number} featureId - Feature ID
+ * @param {string} userId - User identifier
+ * @returns {Promise<boolean>} Success
+ */
+async function deleteFeatureById(featureId, userId = 'default') {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Get the feature name first
+    const featureResult = await client.query(
+      'SELECT feature_name FROM features WHERE id = $1 AND user_id = $2',
+      [featureId, userId]
+    );
+
+    if (featureResult.rows.length === 0) {
+      throw new Error('Feature not found');
+    }
+
+    const featureName = featureResult.rows[0].feature_name;
+
+    // Delete all feature mappings for this feature
+    await client.query(
+      'DELETE FROM feature_mappings WHERE feature_name = $1',
+      [featureName]
+    );
+
+    // Delete the feature
+    const result = await client.query(
+      'DELETE FROM features WHERE id = $1 AND user_id = $2',
+      [featureId, userId]
+    );
+
+    await client.query('COMMIT');
+    return result.rowCount > 0;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting feature:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   getFeatures,
   getFeatureNames,
@@ -272,5 +350,7 @@ module.exports = {
   getFeatureDetails,
   updateFeature,
   deleteFeatureMapping,
-  getAllFeaturesWithCounts
+  getAllFeaturesWithCounts,
+  archiveFeature,
+  deleteFeatureById
 };
