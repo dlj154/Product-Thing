@@ -174,10 +174,10 @@ async function getTranscriptById(transcriptId) {
       });
     });
 
-    // Get new feature suggestions for this transcript (pending features linked to this transcript)
+    // Get feature suggestions for this transcript (pending and archived - both can be approved)
     const suggestionsResult = await client.query(
-      'SELECT id, feature_name, description, status, pain_points_count FROM features WHERE transcript_id = $1 AND status = $2',
-      [transcriptId, 'pending']
+      'SELECT id, feature_name, description, status, pain_points_count FROM features WHERE transcript_id = $1 AND status IN ($2, $3)',
+      [transcriptId, 'pending', 'archived']
     );
 
     // Get quotes/pain points for all suggestions via feature_mappings
