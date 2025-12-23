@@ -42,13 +42,13 @@ async function saveTranscript(userId, transcriptText, summary, features, newFeat
 
     // Insert new feature suggestions directly into features table with 'pending' status
     for (const suggestion of newFeatureSuggestions) {
-      // Check if similar pending suggestion already exists for this user
+      // Check if similar suggestion already exists for this user (pending or archived)
       const similarSuggestions = await client.query(`
-        SELECT id, pain_points_count
+        SELECT id, pain_points_count, status
         FROM features
         WHERE user_id = $1
         AND LOWER(feature_name) = LOWER($2)
-        AND status = 'pending'
+        AND status IN ('pending', 'archived')
         ORDER BY created_at DESC
         LIMIT 1
       `, [userId, suggestion.featureName]);
@@ -57,7 +57,8 @@ async function saveTranscript(userId, transcriptText, summary, features, newFeat
       let painPointsCount;
 
       if (similarSuggestions.rows.length > 0) {
-        // Update existing pending suggestion with incremented count
+        // Update existing suggestion (pending or archived) with incremented count
+        // Keep the same status - archived features stay archived
         const existingId = similarSuggestions.rows[0].id;
         painPointsCount = similarSuggestions.rows[0].pain_points_count + 1;
 
