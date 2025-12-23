@@ -11,21 +11,39 @@ async function initDatabase() {
         user_id TEXT NOT NULL DEFAULT 'default',
         feature_name TEXT NOT NULL,
         description TEXT,
+        status TEXT DEFAULT 'active',
+        is_suggestion BOOLEAN DEFAULT FALSE,
+        transcript_id INTEGER REFERENCES transcripts(id) ON DELETE SET NULL,
+        pain_points_count INTEGER,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
-    // Add description column if it doesn't exist (for existing databases)
+    // Add columns if they don't exist (for existing databases)
     await pool.query(`
       ALTER TABLE features
       ADD COLUMN IF NOT EXISTS description TEXT
     `);
 
-    // Add is_suggestion column if it doesn't exist (for existing databases)
     await pool.query(`
       ALTER TABLE features
       ADD COLUMN IF NOT EXISTS is_suggestion BOOLEAN DEFAULT FALSE
+    `);
+
+    await pool.query(`
+      ALTER TABLE features
+      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'
+    `);
+
+    await pool.query(`
+      ALTER TABLE features
+      ADD COLUMN IF NOT EXISTS transcript_id INTEGER REFERENCES transcripts(id) ON DELETE SET NULL
+    `);
+
+    await pool.query(`
+      ALTER TABLE features
+      ADD COLUMN IF NOT EXISTS pain_points_count INTEGER
     `);
 
     // Create index for faster queries
@@ -101,51 +119,9 @@ async function initDatabase() {
       ON transcript_feature_summaries(transcript_id)
     `);
 
-    // Create transcript_feature_suggestions table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS transcript_feature_suggestions (
-        id SERIAL PRIMARY KEY,
-        transcript_id INTEGER REFERENCES transcripts(id) ON DELETE CASCADE,
-        feature_name TEXT NOT NULL,
-        ai_summary TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    // Create index for transcript_feature_suggestions
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_transcript_feature_suggestions_transcript_id
-      ON transcript_feature_suggestions(transcript_id)
-    `);
-
-    // Create feature_suggestion_quotes table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS feature_suggestion_quotes (
-        id SERIAL PRIMARY KEY,
-        suggestion_id INTEGER REFERENCES transcript_feature_suggestions(id) ON DELETE CASCADE,
-        quote TEXT NOT NULL,
-        pain_point TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    // Create index for feature_suggestion_quotes
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_feature_suggestion_quotes_suggestion_id
-      ON feature_suggestion_quotes(suggestion_id)
-    `);
-
-    // Add status column to transcript_feature_suggestions (for approval workflow)
-    await pool.query(`
-      ALTER TABLE transcript_feature_suggestions
-      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'
-    `);
-
-    // Add pain_points_count column to transcript_feature_suggestions (tracks recurrence)
-    await pool.query(`
-      ALTER TABLE transcript_feature_suggestions
-      ADD COLUMN IF NOT EXISTS pain_points_count INTEGER DEFAULT 1
-    `);
+    // Note: transcript_feature_suggestions and feature_suggestion_quotes tables
+    // have been consolidated into the features table with status field
+    // See backend/db/migrate.js for migration from old schema
 
     console.log('✓ Database schema initialized successfully');
   } catch (error) {

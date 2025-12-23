@@ -1586,10 +1586,10 @@
                 return;
             }
 
-            // Filter out suggestions (archived features) - only show approved features
-            const approvedFeatures = features.filter(f => !f.is_suggestion);
+            // Backend now returns only active features by default (status='active')
+            // No need to filter here anymore
 
-            if (approvedFeatures.length === 0) {
+            if (features.length === 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = '<td colspan="2" style="text-align: center; color: #6b6b6b; padding: 20px;">No features available yet</td>';
                 tableBody.appendChild(row);
@@ -1597,7 +1597,7 @@
             }
 
             // Sort features by pain point count (descending)
-            const sortedFeatures = [...approvedFeatures].sort((a, b) => b.painPointCount - a.painPointCount);
+            const sortedFeatures = [...features].sort((a, b) => b.painPointCount - a.painPointCount);
 
             sortedFeatures.forEach(feature => {
                 const row = document.createElement('tr');

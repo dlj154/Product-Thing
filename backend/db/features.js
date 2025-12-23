@@ -3,13 +3,14 @@ const pool = require('./pool');
 /**
  * Get all features for a user
  * @param {string} userId - User identifier (default: 'default')
+ * @param {string} status - Filter by status (default: 'active')
  * @returns {Promise<Array>} Array of feature objects
  */
-async function getFeatures(userId = 'default') {
+async function getFeatures(userId = 'default', status = 'active') {
   try {
     const result = await pool.query(
-      'SELECT id, feature_name, description, is_suggestion, created_at, updated_at FROM features WHERE user_id = $1 ORDER BY id ASC',
-      [userId]
+      'SELECT id, feature_name, description, status, is_suggestion, created_at, updated_at FROM features WHERE user_id = $1 AND status = $2 ORDER BY id ASC',
+      [userId, status]
     );
     return result.rows;
   } catch (error) {
@@ -47,19 +48,19 @@ async function saveFeatures(userId = 'default', features) {
   try {
     await client.query('BEGIN');
 
-    // Delete existing user-defined features for this user (keep AI suggestions)
-    await client.query('DELETE FROM features WHERE user_id = $1 AND (is_suggestion = FALSE OR is_suggestion IS NULL)', [userId]);
+    // Delete existing manually-created active features for this user (keep AI suggestions)
+    await client.query('DELETE FROM features WHERE user_id = $1 AND is_suggestion = FALSE AND status = $2', [userId, 'active']);
 
-    // Insert new features
+    // Insert new features with active status
     if (features && features.length > 0) {
       const values = features.map((feature, index) =>
-        `($1, $${index + 2}, FALSE)`
+        `($1, $${index + 2}, 'active', FALSE)`
       ).join(', ');
 
       const params = [userId, ...features];
 
       await client.query(
-        `INSERT INTO features (user_id, feature_name, is_suggestion) VALUES ${values}`,
+        `INSERT INTO features (user_id, feature_name, status, is_suggestion) VALUES ${values}`,
         params
       );
     }
@@ -103,7 +104,7 @@ async function getFeatureDetails(featureName, userId = 'default') {
   try {
     // Get feature details
     const featureResult = await pool.query(
-      'SELECT id, feature_name, description, is_suggestion FROM features WHERE feature_name = $1 AND user_id = $2',
+      'SELECT id, feature_name, description, status, is_suggestion FROM features WHERE feature_name = $1 AND user_id = $2',
       [featureName, userId]
     );
 
@@ -228,15 +229,17 @@ async function deleteFeatureMapping(mappingId) {
 /**
  * Get all features with their pain point counts
  * @param {string} userId - User identifier
+ * @param {string} status - Filter by status (default: 'active')
  * @returns {Promise<Array>} Array of features with pain point counts
  */
-async function getAllFeaturesWithCounts(userId = 'default') {
+async function getAllFeaturesWithCounts(userId = 'default', status = 'active') {
   try {
     const result = await pool.query(`
       SELECT
         f.id,
         f.feature_name,
         f.description,
+        f.status,
         f.is_suggestion,
         f.created_at,
         f.updated_at,
@@ -244,15 +247,16 @@ async function getAllFeaturesWithCounts(userId = 'default') {
       FROM features f
       LEFT JOIN feature_mappings fm ON f.feature_name = fm.feature_name
       LEFT JOIN pain_points pp ON fm.pain_point_id = pp.id
-      WHERE f.user_id = $1
-      GROUP BY f.id, f.feature_name, f.description, f.is_suggestion, f.created_at, f.updated_at
+      WHERE f.user_id = $1 AND f.status = $2
+      GROUP BY f.id, f.feature_name, f.description, f.status, f.is_suggestion, f.created_at, f.updated_at
       ORDER BY pain_point_count DESC, f.id ASC
-    `, [userId]);
+    `, [userId, status]);
 
     return result.rows.map(row => ({
       id: row.id,
       feature_name: row.feature_name,
       description: row.description,
+      status: row.status,
       is_suggestion: row.is_suggestion,
       painPointCount: parseInt(row.pain_point_count) || 0,
       created_at: row.created_at,
@@ -265,7 +269,7 @@ async function getAllFeaturesWithCounts(userId = 'default') {
 }
 
 /**
- * Archive a feature (convert it back to a new feature suggestion)
+ * Archive a feature (set status to 'archived')
  * @param {number} featureId - Feature ID
  * @param {string} userId - User identifier
  * @returns {Promise<Object>} Archived feature
@@ -275,10 +279,10 @@ async function archiveFeature(featureId, userId = 'default') {
   try {
     await client.query('BEGIN');
 
-    // Update the feature to be a suggestion
+    // Update the feature status to archived
     const result = await client.query(
-      'UPDATE features SET is_suggestion = TRUE, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
-      [featureId, userId]
+      'UPDATE features SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 RETURNING *',
+      ['archived', featureId, userId]
     );
 
     if (result.rows.length === 0) {
