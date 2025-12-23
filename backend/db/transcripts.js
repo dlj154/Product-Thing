@@ -237,7 +237,7 @@ async function deleteTranscript(transcriptId) {
 }
 
 /**
- * Approve a feature suggestion (change status from 'pending' to 'active')
+ * Approve a feature suggestion (change status from 'pending' or 'archived' to 'active')
  */
 async function approveSuggestion(suggestionId, userId) {
   const client = await pool.connect();
@@ -245,14 +245,14 @@ async function approveSuggestion(suggestionId, userId) {
   try {
     await client.query('BEGIN');
 
-    // Update the feature status from 'pending' to 'active'
+    // Update the feature status to 'active' (works for both pending and archived)
     const result = await client.query(
-      'UPDATE features SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 AND status = $4 RETURNING *',
-      ['active', suggestionId, userId, 'pending']
+      'UPDATE features SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 AND status IN ($4, $5) RETURNING *',
+      ['active', suggestionId, userId, 'pending', 'archived']
     );
 
     if (result.rows.length === 0) {
-      throw new Error('Suggestion not found or already approved');
+      throw new Error('Suggestion not found or already active');
     }
 
     await client.query('COMMIT');
