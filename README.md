@@ -63,8 +63,8 @@ An interactive web app that helps analyze customer interview transcripts using C
    ```
 
 5. **Open the frontend**
-   - Open `interview-analyzer.html` in your web browser
-   - Or use the backend to serve it: navigate to `http://localhost:3001/interview-analyzer.html`
+   - Open `index.html` in your web browser
+   - Or use the backend to serve it: navigate to `http://localhost:3001/`
 
 ---
 
@@ -114,7 +114,7 @@ backend/
 
 ### Frontend (HTML/CSS/JavaScript)
 
-- Single-page application (`interview-analyzer.html`)
+- Single-page application (`index.html`)
 - No build process required
 - Connects to backend API for analysis
 - Includes debug panel for troubleshooting
@@ -160,7 +160,7 @@ Product-Thing/
 │   ├── .env
 │   ├── .env.example
 │   └── package.json
-├── interview-analyzer.html     # Frontend application
+├── index.html                  # Frontend application
 ├── README.md
 └── .gitignore
 ```
