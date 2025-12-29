@@ -32,9 +32,9 @@ You should see:
 
 ## Step 4: Open the Frontend
 
-Open `interview-analyzer.html` in your web browser, or navigate to:
+Open `index.html` in your web browser, or navigate to:
 ```
-http://localhost:3001/interview-analyzer.html
+http://localhost:3001/
 ```
 
 ## Step 5: Analyze Your First Transcript
@@ -71,7 +71,7 @@ Product-Thing/
 │   ├── routes/analyze.js      # API endpoints
 │   ├── .env                   # Your API key (DO NOT COMMIT)
 │   └── package.json
-└── interview-analyzer.html    # Frontend app
+└── index.html                 # Frontend app
 ```
 
 ---

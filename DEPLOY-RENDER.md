@@ -123,14 +123,14 @@ You have two options:
 
 3. **Update the frontend code** to use your backend URL:
 
-   Edit `interview-analyzer.html` line ~618-620:
+   Edit `index.html` line ~618-620:
    ```javascript
    const API_BASE_URL = 'https://interview-analyzer-backend.onrender.com';
    ```
 
 ### Option B: Use Frontend Locally (iPad)
 
-1. Download `interview-analyzer.html` to your iPad
+1. Download `index.html` to your iPad
 2. Edit line ~618-620 in a text editor app to add your backend URL:
    ```javascript
    const API_BASE_URL = 'https://interview-analyzer-backend.onrender.com';
