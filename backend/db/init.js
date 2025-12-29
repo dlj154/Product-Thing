@@ -119,10 +119,6 @@ async function initDatabase() {
       ON transcript_feature_summaries(transcript_id)
     `);
 
-    // Note: transcript_feature_suggestions and feature_suggestion_quotes tables
-    // have been consolidated into the features table with status field
-    // See backend/db/migrate.js for migration from old schema
-
     console.log('✓ Database schema initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
